@@ -59,11 +59,7 @@ jobs:
             NEW_APP_VERSION="${APP_VERSION}"
           fi
           echo $NEW_APP_VERSION
-          if [ "$OS" == "windows-latest" ]; then
-            echo "RELEASE_NAME=$NEW_APP_VERSION" >> $env:GITHUB_ENV   
-          else
-            echo "RELEASE_NAME=$NEW_APP_VERSION" >> $GITHUB_ENV   
-          fi
+          echo "RELEASE_NAME=$NEW_APP_VERSION" >> $GITHUB_ENV
           
       - name: RUN DIST (LINUX)
         if: matrix.os == 'ubuntu-22.04'
