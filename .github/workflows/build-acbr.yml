@@ -117,7 +117,7 @@ jobs:
         run: ls ./dist   
         
       - name: RELEASE (LINUX) (ALL)
-        if: ${{matrix.os == 'ubuntu-22.04' && github.event.inputs.releaseLinAppImage == "true" }}
+        if: ${{matrix.os == 'ubuntu-22.04' && github.event.inputs.releaseLinAppImage == 'true' }}
         uses: softprops/action-gh-release@v2
         with:
           prerelease: true
@@ -128,7 +128,7 @@ jobs:
             ./dist/ACBR_Linux.zip
             ./dist/ACBR_Linux_AppImage.zip
       - name: RELEASE (LINUX) (SIMPLE)
-        if: ${{matrix.os == 'ubuntu-22.04' && github.event.inputs.releaseLinAppImage == "false" }}
+        if: ${{matrix.os == 'ubuntu-22.04' && github.event.inputs.releaseLinAppImage == 'false' }}
         uses: softprops/action-gh-release@v2
         with:
           prerelease: true
@@ -138,7 +138,7 @@ jobs:
           files: |
             ./dist/ACBR_Linux.zip  
       - name: RELEASE (WINDOWS) (ALL)
-        if: ${{matrix.os == 'windows-latest' && rgithub.event.inputs.eleaseWinSelfExtracting == "true" }}
+        if: ${{matrix.os == 'windows-latest' && rgithub.event.inputs.eleaseWinSelfExtracting == 'true' }}
         uses: softprops/action-gh-release@v2
         with:
           prerelease: true
@@ -149,7 +149,7 @@ jobs:
             ./dist/ACBR_Windows.zip
             ./dist/ACBR_Windows_SelfExtracting.exe
       - name: RELEASE (WINDOWS) (SIMPLE)
-        if: ${{matrix.os == 'windows-latest' && github.event.inputs.releaseWinSelfExtracting == "false" }}
+        if: ${{matrix.os == 'windows-latest' && github.event.inputs.releaseWinSelfExtracting == 'false' }}
         uses: softprops/action-gh-release@v2
         with:
           prerelease: true
