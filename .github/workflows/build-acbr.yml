@@ -10,6 +10,14 @@ on:
         description: 'Add date to any version'     
         required: true
         default: false
+      releaseWinSelfExtracting:
+        description: 'Include Windows Self-Extracting'     
+        required: true
+        default: false
+      releaseLinAppImage:
+        description: 'Include Linux AppImage'     
+        required: true
+        default: false
 permissions:
   contents: write
   
@@ -108,8 +116,8 @@ jobs:
         shell: bash
         run: ls ./dist   
         
-      - name: RELEASE (LINUX)
-        if: matrix.os == 'ubuntu-22.04'
+      - name: RELEASE (LINUX) (ALL)
+        if: ${{matrix.os == 'ubuntu-22.04' && releaseLinAppImage == "true" }}
         uses: softprops/action-gh-release@v2
         with:
           prerelease: true
@@ -119,8 +127,18 @@ jobs:
           files: |
             ./dist/ACBR_Linux.zip
             ./dist/ACBR_Linux_AppImage.zip
-      - name: RELEASE (WINDOWS)
-        if: matrix.os == 'windows-latest'
+      - name: RELEASE (LINUX) (SIMPLE)
+        if: ${{matrix.os == 'ubuntu-22.04' && releaseLinAppImage == "false" }}
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          draft: true
+          name: v${{env.RELEASE_NAME}} (linux)
+          tag_name: v${{env.RELEASE_NAME}}-linux
+          files: |
+            ./dist/ACBR_Linux.zip  
+      - name: RELEASE (WINDOWS) (ALL)
+        if: ${{matrix.os == 'windows-latest' && releaseWinSelfExtracting == "true" }}
         uses: softprops/action-gh-release@v2
         with:
           prerelease: true
@@ -130,3 +148,14 @@ jobs:
           files: |
             ./dist/ACBR_Windows.zip
             ./dist/ACBR_Windows_SelfExtracting.exe
+      - name: RELEASE (WINDOWS) (SIMPLE)
+        if: ${{matrix.os == 'windows-latest' && releaseWinSelfExtracting == "false" }}
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          draft: true
+          name: v${{env.RELEASE_NAME}} (windows)
+          tag_name: v${{env.RELEASE_NAME}}-windows
+          files: |
+            ./dist/ACBR_Windows.zip
+            
