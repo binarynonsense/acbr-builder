@@ -138,7 +138,7 @@ jobs:
           files: |
             ./dist/ACBR_Linux.zip  
       - name: RELEASE (WINDOWS) (ALL)
-        if: ${{matrix.os == 'windows-latest' && rgithub.event.inputs.eleaseWinSelfExtracting == 'true' }}
+        if: ${{matrix.os == 'windows-latest' && github.event.inputs.releaseWinSelfExtracting == 'true' }}
         uses: softprops/action-gh-release@v2
         with:
           prerelease: true
