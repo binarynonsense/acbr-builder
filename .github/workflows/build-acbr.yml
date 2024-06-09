@@ -110,7 +110,10 @@ jobs:
         run: |
           cd ./dist
           7z a ./ACBR_Windows.zip ./ACBR_Windows
-          7z a -t7z -sfx -m0=lzma2 -mx=9 ACBR_Windows_SelfExtracting.exe ./ACBR_Windows
+          RELEASE_SE=${{ github.event.inputs.releaseWinSelfExtracting }}
+          if [ "$RELEASE_SE" == true ]; then
+            7z a -t7z -sfx -m0=lzma2 -mx=9 ACBR_Windows_SelfExtracting.exe ./ACBR_Windows
+          fi
           
       - name: LS DIST
         shell: bash
