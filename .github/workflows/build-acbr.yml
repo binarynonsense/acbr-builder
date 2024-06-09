@@ -2,6 +2,14 @@ name: Build ACBR
 on: 
   workflow_dispatch:
     inputs:
+      createWindows:
+        description: 'Create Windows version'     
+        required: true
+        default: true
+      createLinux:
+        description: 'Create Linux version'     
+        required: true
+        default: true
       addDateToAlphas:
         description: 'Add date to alpha versions'     
         required: true
@@ -70,10 +78,10 @@ jobs:
           echo "RELEASE_NAME=$NEW_APP_VERSION" >> $GITHUB_ENV
           
       - name: RUN DIST (LINUX)
-        if: matrix.os == 'ubuntu-22.04'
+        if: ${{ matrix.os == 'ubuntu-22.04' && github.event.inputs.createLinux == 'true' }}
         run: npm run dist:linux        
       - name: RUN DIST (WINDOWS)
-        if: matrix.os == 'windows-latest'
+        if: ${{ matrix.os == 'windows-latest' && github.event.inputs.createWindows == 'true' }}
         run: npm run dist:windows
         
       - name: LS DIST
@@ -81,7 +89,7 @@ jobs:
         run: ls ./dist  
         
       - name: PREPARE FILES (LINUX)
-        if: matrix.os == 'ubuntu-22.04'
+        if: ${{ matrix.os == 'ubuntu-22.04' && github.event.inputs.createLinux == 'true' }}
         run: |
           mkdir ./dist/ACBR_Linux_AppImage
           mv ./dist/*.AppImage ./dist/ACBR_Linux_AppImage/
@@ -92,7 +100,7 @@ jobs:
           cp -r licenses ./dist/ACBR_Linux/licenses
           rm  ./dist/ACBR_Linux/LICENSE*
       - name: PREPARE FILES (WINDOWS)
-        if: matrix.os == 'windows-latest'
+        if: ${{ matrix.os == 'windows-latest' && github.event.inputs.createWindows == 'true' }}
         shell: bash
         run: |      
           mv ./dist/win-unpacked ./dist/ACBR_Windows
@@ -100,13 +108,13 @@ jobs:
           rm  ./dist/ACBR_Windows/LICENSE*
           
       - name: PREPARE ZIPS (LINUX)
-        if: matrix.os == 'ubuntu-22.04'
+        if: ${{ matrix.os == 'ubuntu-22.04' && github.event.inputs.createLinux == 'true' }}
         run: |
           cd ./dist
           zip -r ./ACBR_Linux.zip ./ACBR_Linux
           zip -r ./ACBR_Linux_AppImage.zip ./ACBR_Linux_AppImage
       - name: PREPARE ZIPS (WINDOWS)
-        if: matrix.os == 'windows-latest'
+        if: ${{ matrix.os == 'windows-latest' && github.event.inputs.createWindows == 'true' }}
         run: |
           cd ./dist
           7z a ./ACBR_Windows.zip ./ACBR_Windows
@@ -120,7 +128,7 @@ jobs:
         run: ls ./dist   
         
       - name: RELEASE (LINUX) (ALL)
-        if: ${{matrix.os == 'ubuntu-22.04' && github.event.inputs.releaseLinAppImage == 'true' }}
+        if: ${{matrix.os == 'ubuntu-22.04' && github.event.inputs.createLinux == 'true' && github.event.inputs.releaseLinAppImage == 'true' }}
         uses: softprops/action-gh-release@v2
         with:
           prerelease: true
@@ -131,7 +139,7 @@ jobs:
             ./dist/ACBR_Linux.zip
             ./dist/ACBR_Linux_AppImage.zip
       - name: RELEASE (LINUX) (SIMPLE)
-        if: ${{matrix.os == 'ubuntu-22.04' && github.event.inputs.releaseLinAppImage == 'false' }}
+        if: ${{matrix.os == 'ubuntu-22.04' && github.event.inputs.createLinux == 'true' && github.event.inputs.releaseLinAppImage == 'false' }}
         uses: softprops/action-gh-release@v2
         with:
           prerelease: true
@@ -141,7 +149,7 @@ jobs:
           files: |
             ./dist/ACBR_Linux.zip  
       - name: RELEASE (WINDOWS) (ALL)
-        if: ${{matrix.os == 'windows-latest' && github.event.inputs.releaseWinSelfExtracting == 'true' }}
+        if: ${{matrix.os == 'windows-latest' && github.event.inputs.createWindows == 'true' && github.event.inputs.releaseWinSelfExtracting == 'true' }}
         uses: softprops/action-gh-release@v2
         with:
           prerelease: true
@@ -152,7 +160,7 @@ jobs:
             ./dist/ACBR_Windows.zip
             ./dist/ACBR_Windows_SelfExtracting.exe
       - name: RELEASE (WINDOWS) (SIMPLE)
-        if: ${{matrix.os == 'windows-latest' && github.event.inputs.releaseWinSelfExtracting == 'false' }}
+        if: ${{matrix.os == 'windows-latest' && github.event.inputs.createWindows == 'true' && github.event.inputs.releaseWinSelfExtracting == 'false' }}
         uses: softprops/action-gh-release@v2
         with:
           prerelease: true
