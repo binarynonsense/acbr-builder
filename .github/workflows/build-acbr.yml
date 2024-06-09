@@ -114,12 +114,14 @@ jobs:
           
       - name: PREPARE ZIPS (LINUX)
         if: ${{ matrix.os == 'ubuntu-22.04' && github.event.inputs.createLinux == 'true' }}
+        shell: bash
         run: |
           cd ./dist
           zip -r ./ACBR_Linux.zip ./ACBR_Linux
           zip -r ./ACBR_Linux_AppImage.zip ./ACBR_Linux_AppImage
       - name: PREPARE ZIPS (WINDOWS)
         if: ${{ matrix.os == 'windows-latest' && github.event.inputs.createWindows == 'true' }}
+        shell: bash
         run: |
           cd ./dist
           7z a ./ACBR_Windows.zip ./ACBR_Windows
