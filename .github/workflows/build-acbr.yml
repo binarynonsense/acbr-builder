@@ -100,6 +100,7 @@ jobs:
           mv ./dist/*.deb ./dist/ACBR_Linux_deb/
           cp -r licenses ./dist/ACBR_Linux_deb/licenses
           cp ./dist/VERSION ./dist/ACBR_Linux_deb/
+          mv ./dist/ACBR_deb.sh ./dist/ACBR_Linux_deb/ACBR.sh 
 
           mkdir ./dist/ACBR_Linux_AppImage
           mv ./dist/*.AppImage ./dist/ACBR_Linux_AppImage/
