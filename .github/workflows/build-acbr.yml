@@ -106,11 +106,16 @@ jobs:
           mv ./dist/*.AppImage ./dist/ACBR_Linux_AppImage/
           cp -r licenses ./dist/ACBR_Linux_AppImage/licenses
           mv ./dist/VERSION ./dist/ACBR_Linux_AppImage/
-          mv ./dist/ACBR.sh ./dist/ACBR_Linux_AppImage/ 
+          mv ./dist/ACBR.sh ./dist/ACBR_Linux_AppImage/
+
+          mkdir ./dist/ACBR_Linux_flatpak
+          mv ./dist/*.flatpak ./dist/ACBR_Linux_flatpak/
+          cp -r licenses ./dist/ACBR_Linux_flatpak/licenses
+          cp ./dist/VERSION ./dist/ACBR_Linux_flatpak/
 
           mv ./dist/linux-unpacked ./dist/ACBR_Linux
           cp -r licenses ./dist/ACBR_Linux/licenses
-          rm  ./dist/ACBR_Linux/LICENSE*
+          rm  ./dist/ACBR_Linux/LICENSE*          
       - name: PREPARE FILES (WINDOWS)
         if: ${{ matrix.os == 'windows-latest' && github.event.inputs.createWindows == 'true' }}
         shell: bash
@@ -127,6 +132,7 @@ jobs:
           zip -r ./ACBR_Linux.zip ./ACBR_Linux
           zip -r ./ACBR_Linux_AppImage.zip ./ACBR_Linux_AppImage
           zip -r ./ACBR_Linux_deb.zip ./ACBR_Linux_deb
+          zip -r ./ACBR_Linux_flatpak.zip ./ACBR_Linux_flatpak
       - name: PREPARE ZIPS (WINDOWS)
         if: ${{ matrix.os == 'windows-latest' && github.event.inputs.createWindows == 'true' }}
         shell: bash
@@ -155,6 +161,7 @@ jobs:
             ./dist/ACBR_Linux.zip
             ./dist/ACBR_Linux_AppImage.zip
             ./dist/ACBR_Linux_deb.zip
+            ./dist/ACBR_Linux_flatpak.zip
       - name: RELEASE (LINUX) (SIMPLE)
         if: ${{matrix.os == 'ubuntu-24.04' && github.event.inputs.createLinux == 'true' && github.event.inputs.releaseLinAppImage == 'false' }}
         uses: softprops/action-gh-release@v2
