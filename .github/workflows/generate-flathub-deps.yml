@@ -62,6 +62,6 @@ jobs:
           prerelease: true
           draft: true
           name: v${{env.RELEASE_NAME}} - flathub deps
-          tag_name: v${{env.RELEASE_NAME}}-windows
+          tag_name: v${{env.RELEASE_NAME}}-falthub-deps
           files: |
             generated-sources.json
