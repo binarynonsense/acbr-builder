@@ -47,7 +47,7 @@ jobs:
 
       - name: GENERATE generated-sources.json
         run: |
-          flatpak-node-generator npm --xdg-layout package-lock.json
+          flatpak-node-generator npm package-lock.json
 
       - name: GENERATE generated-sources.json
         run: |
