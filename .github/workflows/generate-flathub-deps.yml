@@ -41,20 +41,13 @@ jobs:
           echo $NEW_APP_VERSION
           echo "RELEASE_NAME=$NEW_APP_VERSION" >> $GITHUB_ENV
           
-      - name: INSTALL FALTPAK BUILDER TOOLS
+      - name: INSTALL FLATPAK BUILDER TOOLS
         run: |
           pipx install git+https://github.com/flatpak/flatpak-builder-tools.git#subdirectory=node
 
       - name: GENERATE generated-sources.json
         run: |
           flatpak-node-generator npm package-lock.json
-
-      - name: GENERATE generated-sources.json
-        run: |
-          pipx install git+https://github.com/flatpak/flatpak-builder-tools.git#subdirectory=node
-          flatpak-node-generator npm package-lock.json
-          ls
-          cat generated-sources.json
 
       - name: RELEASE
         uses: softprops/action-gh-release@v2
