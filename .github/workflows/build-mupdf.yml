@@ -95,18 +95,31 @@ jobs:
         working-directory: mupdf-source
         run: |
           call "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Auxiliary\\Build\\vcvars64.bat"
-          :: Flags match Linux parity (0=Off, 1=On)
-          call scripts\static-nmake.bat ^
+          
+          :: Check if the script exists in root or platform/win32
+          if exist scripts\static-nmake.bat (
+            set BUILD_CMD=scripts\static-nmake.bat
+          ) else if exist platform\win32\static-nmake.bat (
+            set BUILD_CMD=platform\win32\static-nmake.bat
+          ) else (
+            :: Fallback to root nmake if batch script is missing
+            set BUILD_CMD=nmake -f Makethird && nmake -f Makefile
+          )
+
+          call %BUILD_CMD% ^
             HAVE_MUJS=0 ^
             HAVE_GLUT=0 ^
             HAVE_LIBCRYPTO=0 ^
             HAVE_LIBJPEG=1 ^
             THIRD_LIBJPEG=1 ^
             XCFLAGS="-Ithirdparty/libjpeg -DHAVE_LIBJPEG=1"
+          
           if exist build\release\mutool.exe (
             move build\release\mutool.exe ..\mutool-win.exe
           ) else if exist build\rel\mutool.exe (
             move build\rel\mutool.exe ..\mutool-win.exe
+          ) else if exist mutool.exe (
+            move mutool.exe ..\mutool-win.exe
           )
 
       - name: Create Prerelease
