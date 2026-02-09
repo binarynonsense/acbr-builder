@@ -46,12 +46,12 @@ jobs:
           with open('source/tools/mudraw.c', 'r', encoding='utf-8') as f:
               content = f.read()
           old_suffix = '{ ".png", OUT_PNG, 0 },'
-          new_suffix = old_suffix + '\n\t{ ".jpg", OUT_PNG, 0 },\n\t{ ".jpeg", OUT_PNG, 0 },'
-          with open('source/tools/mudraw.c', 'w', encoding='utf-8', newline='\n') as f:
+          new_suffix = old_suffix + '\\n\\t{ ".jpg", OUT_PNG, 0 },\\n\\t{ ".jpeg", OUT_PNG, 0 },'
+          with open('source/tools/mudraw.c', 'w', encoding='utf-8', newline='\\n') as f:
               f.write(content.replace(old_suffix, new_suffix))
           with open('source/fitz/writer.c', 'r', encoding='utf-8') as f:
               content = f.read()
-          new_code = ("static void fz_write_pixmap_as_jpeg_wrapper(fz_context *ctx, fz_output *out, fz_pixmap *pixmap)\\n{\\n\\tfz_write_pixmap_as_jpeg(ctx, out, pixmap, 80, 0);\\n}\\n\\nfz_document_writer *fz_new_jpeg_pixmap_writer_with_output(fz_context *ctx, fz_output *out, const char *options)\\n{\\n\\treturn fz_new_pixmap_writer_with_output(ctx, out, options, 0, fz_write_pixmap_as_jpeg_wrapper);\\n}").replace("\\n", "\n").replace("\\t", "\t")
+          new_code = ("static void fz_write_pixmap_as_jpeg_wrapper(fz_context *ctx, fz_output *out, fz_pixmap *pixmap)\\n{\\n\\tfz_write_pixmap_as_jpeg(ctx, out, pixmap, 80, 0);\\n}\\n\\nfz_document_writer *fz_new_jpeg_pixmap_writer_with_output(fz_context *ctx, fz_output *out, const char *options)\\n{\\n\\treturn fz_new_pixmap_writer_with_output(ctx, out, options, 0, fz_write_pixmap_as_jpeg_wrapper);\\n}").replace("\\\\n", "\\n").replace("\\\\t", "\\t")
           stub_start = "fz_document_writer *fz_new_jpeg_pixmap_writer_with_output"
           idx_start = content.find(stub_start)
           idx_end_search = content.find("fz_write_pixmap_as_jpeg_default);", idx_start)
@@ -59,9 +59,9 @@ jobs:
               idx_end = content.find("}", idx_end_search) + 1
               content = content[:idx_start] + new_code + content[idx_end:]
           old_throw = 'fz_throw(ctx, FZ_ERROR_ARGUMENT, "unknown output document format: %s", format);'
-          router_logic = ('if (is_extension(format, "jpeg") || is_extension(format, "jpg"))\\n\\t\\treturn fz_new_jpeg_pixmap_writer_with_output(ctx, out, options);\\n\\t').replace("\\n", "\n").replace("\\t", "\t")
+          router_logic = ('if (is_extension(format, "jpeg") || is_extension(format, "jpg"))\\n\\t\\treturn fz_new_jpeg_pixmap_writer_with_output(ctx, out, options);\\n\\t').replace("\\\\n", "\\n").replace("\\\\t", "\\t")
           content = content.replace(old_throw, router_logic + old_throw)
-          with open('source/fitz/writer.c', 'w', encoding='utf-8', newline='\n') as f:
+          with open('source/fitz/writer.c', 'w', encoding='utf-8', newline='\\n') as f:
               f.write(content)
 
       - name: Build Linux
@@ -72,21 +72,17 @@ jobs:
           make -j$(nproc) build=release OUT=build/universal HAVE_X11=no HAVE_GLUT=no HAVE_MUJS=no HAVE_LIBCRYPTO=no USE_SYSTEM_LIBS=no HAVE_LIBJPEG=yes SHARE_JPEG=no XCFLAGS="-Ithirdparty/libjpeg -DHAVE_LIBJPEG=1"
           strip --strip-all build/universal/mutool
 
-      # --- Windows Specific ---
       - name: Setup MSBuild
         if: matrix.target == 'windows' && github.event.inputs.build_windows == 'true'
         uses: microsoft/setup-msbuild@v2
 
       - name: Build Windows (MSBuild)
         if: matrix.target == 'windows' && github.event.inputs.build_windows == 'true'
-        working-directory: mupdf-source
+        working-directory: mupdf-source/platform/win32
         run: |
-          cd platform/win32
           msbuild mupdf.sln /p:Configuration=Release /p:Platform=x64 /t:mutool /p:PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;HAVE_LIBJPEG;HAVE_MUJS=0;HAVE_LIBCRYPTO=0;HAVE_GLUT=0"
           if (Test-Path "x64\Release\mutool.exe") {
-            Copy-Item "x64\Release\mutool.exe" "..\..\mutool-win.exe"
-          } elseif (Test-Path "Release\mutool.exe") {
-            Copy-Item "Release\mutool.exe" "..\..\mutool-win.exe"
+            Copy-Item "x64\Release\mutool.exe" "..\..\..\mutool-win.exe"
           }
 
       - name: Create Prerelease
