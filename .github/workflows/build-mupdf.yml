@@ -6,14 +6,8 @@ on:
         description: 'MuPDF Tag (e.g., 1.27.0)'
         required: true
         default: '1.27.0'
-      build_linux:
-        description: 'Build Linux?'
-        type: boolean
-        default: true
-      build_windows:
-        description: 'Build Windows?'
-        type: boolean
-        default: true
+      build_linux: { type: boolean, default: true }
+      build_windows: { type: boolean, default: true }
 
 jobs:
   build:
@@ -78,16 +72,15 @@ jobs:
           make -j$(nproc) build=release OUT=build/universal HAVE_X11=no HAVE_GLUT=no HAVE_MUJS=no HAVE_LIBCRYPTO=no USE_SYSTEM_LIBS=no HAVE_LIBJPEG=yes SHARE_JPEG=no XCFLAGS="-Ithirdparty/libjpeg -DHAVE_LIBJPEG=1"
           strip --strip-all build/universal/mutool
 
-      - name: Build Windows
+      - name: Build Windows (MSBuild)
         if: matrix.target == 'windows' && github.event.inputs.build_windows == 'true'
-        shell: cmd
         working-directory: mupdf-source
         run: |
-          call "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Auxiliary\\Build\\vcvars64.bat"
-          cd platform\win32
-          :: We use the Windows-specific NMAKE Makefile inside this folder
-          nmake -f Makefile OUT=..\..\build\rel build=release HAVE_MUJS=0 HAVE_GLUT=0 HAVE_LIBCRYPTO=0 HAVE_LIBJPEG=1 THIRD_LIBJPEG=1 XCFLAGS="-I..\..\thirdparty\libjpeg -DHAVE_LIBJPEG=1"
-          copy ..\..\build\rel\mutool.exe ..\..\mutool-win.exe
+          cd platform/win32
+          # We use MSBuild to target the mutool project specifically
+          # PreprocessorDefinitions override the HAVE_MUJS etc. flags
+          msbuild mupdf.sln /p:Configuration=Release /p:Platform=x64 /t:mutool /p:PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;HAVE_LIBJPEG;HAVE_MUJS=0;HAVE_LIBCRYPTO=0;HAVE_GLUT=0"
+          copy x64\Release\mutool.exe ..\..\mutool-win.exe
 
       - name: Create Prerelease
         if: |
