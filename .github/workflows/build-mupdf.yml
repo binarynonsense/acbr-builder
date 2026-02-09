@@ -29,11 +29,11 @@ jobs:
           - os: windows-latest
             target: windows
             enabled: ${{ github.event.inputs.build_windows }}
-    if: ${{ matrix.enabled == true }}
     permissions:
       contents: write
     steps:
       - name: Checkout MuPDF Source
+        if: ${{ matrix.enabled }}
         uses: actions/checkout@v4
         with:
           repository: ArtifexSoftware/mupdf
@@ -42,11 +42,11 @@ jobs:
           submodules: recursive
 
       - name: Apply Triple Surgery (Python Index-Based)
+        if: ${{ matrix.enabled }}
         shell: python
         working-directory: mupdf-source
         run: |
           import os
-
           # 1. Modify mudraw.c (Suffix Table)
           with open('source/tools/mudraw.c', 'r', encoding='utf-8') as f:
               content = f.read()
@@ -54,46 +54,24 @@ jobs:
           new_suffix = old_suffix + '\n\t{ ".jpg", OUT_PNG, 0 },\n\t{ ".jpeg", OUT_PNG, 0 },'
           with open('source/tools/mudraw.c', 'w', encoding='utf-8', newline='\n') as f:
               f.write(content.replace(old_suffix, new_suffix))
-
           # 2. Modify writer.c
           with open('source/fitz/writer.c', 'r', encoding='utf-8') as f:
               content = f.read()
-
-          new_code = (
-              "static void fz_write_pixmap_as_jpeg_wrapper(fz_context *ctx, fz_output *out, fz_pixmap *pixmap)\\n"
-              "{\\n"
-              "\\tfz_write_pixmap_as_jpeg(ctx, out, pixmap, 80, 0);\\n"
-              "}\\n\\n"
-              "fz_document_writer *fz_new_jpeg_pixmap_writer_with_output(fz_context *ctx, fz_output *out, const char *options)\\n"
-              "{\\n"
-              "\\treturn fz_new_pixmap_writer_with_output(ctx, out, options, 0, fz_write_pixmap_as_jpeg_wrapper);\\n"
-              "}"
-          ).replace("\\n", "\n").replace("\\t", "\t")
-
+          new_code = ("static void fz_write_pixmap_as_jpeg_wrapper(fz_context *ctx, fz_output *out, fz_pixmap *pixmap)\\n{\\n\\tfz_write_pixmap_as_jpeg(ctx, out, pixmap, 80, 0);\\n}\\n\\nfz_document_writer *fz_new_jpeg_pixmap_writer_with_output(fz_context *ctx, fz_output *out, const char *options)\\n{\\n\\treturn fz_new_pixmap_writer_with_output(ctx, out, options, 0, fz_write_pixmap_as_jpeg_wrapper);\\n}").replace("\\n", "\n").replace("\\t", "\t")
           stub_start = "fz_document_writer *fz_new_jpeg_pixmap_writer_with_output"
           idx_start = content.find(stub_start)
           idx_end_search = content.find("fz_write_pixmap_as_jpeg_default);", idx_start)
-          
           if idx_start != -1 and idx_end_search != -1:
               idx_end = content.find("}", idx_end_search) + 1
               content = content[:idx_start] + new_code + content[idx_end:]
-          else:
-              print("Error: Could not find the JPEG writer stub in writer.c")
-              exit(1)
-
           old_throw = 'fz_throw(ctx, FZ_ERROR_ARGUMENT, "unknown output document format: %s", format);'
-          router_logic = (
-              'if (is_extension(format, "jpeg") || is_extension(format, "jpg"))\\n'
-              '\\t\\treturn fz_new_jpeg_pixmap_writer_with_output(ctx, out, options);\\n\\t'
-          ).replace("\\n", "\n").replace("\\t", "\t")
-          
+          router_logic = ('if (is_extension(format, "jpeg") || is_extension(format, "jpg"))\\n\\t\\treturn fz_new_jpeg_pixmap_writer_with_output(ctx, out, options);\\n\\t').replace("\\n", "\n").replace("\\t", "\t")
           content = content.replace(old_throw, router_logic + old_throw)
-
           with open('source/fitz/writer.c', 'w', encoding='utf-8', newline='\n') as f:
               f.write(content)
 
       - name: Build Linux
-        if: matrix.target == 'linux'
+        if: ${{ matrix.enabled && matrix.target == 'linux' }}
         working-directory: mupdf-source
         run: |
           sudo apt update && sudo apt install -y build-essential pkg-config
@@ -101,17 +79,17 @@ jobs:
           strip --strip-all build/universal/mutool
 
       - name: Build Windows
-        if: matrix.target == 'windows'
+        if: ${{ matrix.enabled && matrix.target == 'windows' }}
         shell: cmd
         working-directory: mupdf-source
         run: |
           call "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Auxiliary\\Build\\vcvars64.bat"
-          :: Move to the directory containing the Windows NMake file
           cd platform\win32
           nmake -f Makefile OUT=..\..\build\rel build=release HAVE_X11=no HAVE_GLUT=no HAVE_MUJS=no HAVE_LIBCRYPTO=no HAVE_LIBJPEG=yes THIRD_LIBJPEG=yes XCFLAGS="-I..\..\thirdparty\libjpeg -DHAVE_LIBJPEG=1"
           copy ..\..\build\rel\mutool.exe ..\..\mutool-win.exe
 
       - name: Create Prerelease
+        if: ${{ matrix.enabled }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: mupdf-${{ github.event.inputs.mupdf_tag }}-${{ github.run_number }}
