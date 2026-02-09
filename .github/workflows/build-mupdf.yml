@@ -1,0 +1,89 @@
+name: Build Universal MuPDF
+on:
+  workflow_dispatch:
+    inputs:
+      mupdf_tag:
+        description: 'MuPDF Tag (e.g., 1.27.0)'
+        required: true
+        default: '1.27.0'
+      build_linux:
+        description: 'Build Linux?'
+        type: boolean
+        default: true
+      build_windows:
+        description: 'Build Windows?'
+        type: boolean
+        default: true
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            target: linux
+            enabled: ${{ github.event.inputs.build_linux }}
+          - os: windows-latest
+            target: windows
+            enabled: ${{ github.event.inputs.build_windows }}
+    # Remove the 'if' from here. We check 'enabled' in each step instead.
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout MuPDF Source
+        if: ${{ matrix.enabled }}
+        uses: actions/checkout@v4
+        with:
+          repository: ArtifexSoftware/mupdf
+          ref: ${{ github.event.inputs.mupdf_tag }}
+          path: mupdf-source
+          submodules: recursive
+
+      - name: Apply Triple Surgery
+        if: ${{ matrix.enabled }}
+        shell: bash
+        working-directory: mupdf-source
+        run: |
+          sed -i '/{ ".png", OUT_PNG, 0 },/a \	{ ".jpg", OUT_PNG, 0 },\n\	{ ".jpeg", OUT_PNG, 0 },' source/tools/mudraw.c
+          sed -i '/unknown output document format/i \	if (is_extension(format, "jpeg") || is_extension(format, "jpg")) return fz_new_jpeg_pixmap_writer_with_output(ctx, out, options);' source/fitz/writer.c
+          sed -i '/fz_new_jpeg_pixmap_writer_with_output/,/}/d' source/fitz/writer.c
+          cat >> source/fitz/writer.c <<EOF
+          static void fz_write_pixmap_as_jpeg_wrapper(fz_context *ctx, fz_output *out, fz_pixmap *pixmap) {
+              fz_write_pixmap_as_jpeg(ctx, out, pixmap, 80, 0);
+          }
+          fz_document_writer *fz_new_jpeg_pixmap_writer_with_output(fz_context *ctx, fz_output *out, const char *options) {
+              return fz_new_pixmap_writer_with_output(ctx, out, options, 0, fz_write_pixmap_as_jpeg_wrapper);
+          }
+          EOF
+
+      - name: Build Linux
+        if: ${{ matrix.enabled && matrix.target == 'linux' }}
+        working-directory: mupdf-source
+        run: |
+          sudo apt update && sudo apt install -y build-essential pkg-config
+          make -j$(nproc) build=release OUT=build/universal HAVE_X11=no HAVE_GLUT=no HAVE_MUJS=no HAVE_LIBCRYPTO=no USE_SYSTEM_LIBS=no HAVE_LIBJPEG=yes SHARE_JPEG=no XCFLAGS="-Ithirdparty/libjpeg -DHAVE_LIBJPEG=1"
+          strip --strip-all build/universal/mutool
+
+      - name: Build Windows
+        if: ${{ matrix.enabled && matrix.target == 'windows' }}
+        shell: cmd
+        working-directory: mupdf-source
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          nmake -f makefile.msvc CFG=rel HAVE_X11=no HAVE_GLUT=no HAVE_MUJS=no HAVE_LIBCRYPTO=no HAVE_LIBJPEG=yes THIRD_LIBJPEG=yes XCFLAGS="-Ithirdparty/libjpeg -DHAVE_LIBJPEG=1"
+          copy build\rel\mutool.exe ..\mutool-win.exe
+
+      - name: Create Prerelease
+        if: ${{ matrix.enabled }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: mupdf-${{ github.event.inputs.mupdf_tag }}-${{ github.run_number }}
+          name: MuPDF ${{ github.event.inputs.mupdf_tag }} Build ${{ github.run_number }}
+          prerelease: true
+          files: |
+            mupdf-source/COPYING
+            mupdf-source/build/universal/mutool
+            mutool-win.exe
