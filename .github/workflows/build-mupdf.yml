@@ -49,35 +49,24 @@ jobs:
         working-directory: mupdf-source
         run: |
           import os
-          # 1. Modify mudraw.c (Suffix Table)
           with open('source/tools/mudraw.c', 'r', encoding='utf-8') as f:
               content = f.read()
           old_suffix = '{ ".png", OUT_PNG, 0 },'
           new_suffix = old_suffix + '\n\t{ ".jpg", OUT_PNG, 0 },\n\t{ ".jpeg", OUT_PNG, 0 },'
           with open('source/tools/mudraw.c', 'w', encoding='utf-8', newline='\n') as f:
               f.write(content.replace(old_suffix, new_suffix))
-          
-          # 2. Modify writer.c (Replace Stub & Add Router)
           with open('source/fitz/writer.c', 'r', encoding='utf-8') as f:
               content = f.read()
-          
-          new_code = ("static void fz_write_pixmap_as_jpeg_wrapper(fz_context *ctx, fz_output *out, fz_pixmap *pixmap)\\n"
-                      "{\\n\\tfz_write_pixmap_as_jpeg(ctx, out, pixmap, 80, 0);\\n}\\n\\n"
-                      "fz_document_writer *fz_new_jpeg_pixmap_writer_with_output(fz_context *ctx, fz_output *out, const char *options)\\n"
-                      "{\\n\\treturn fz_new_pixmap_writer_with_output(ctx, out, options, 0, fz_write_pixmap_as_jpeg_wrapper);\\n}").replace("\\n", "\n").replace("\\t", "\t")
-          
+          new_code = ("static void fz_write_pixmap_as_jpeg_wrapper(fz_context *ctx, fz_output *out, fz_pixmap *pixmap)\\n{\\n\\tfz_write_pixmap_as_jpeg(ctx, out, pixmap, 80, 0);\\n}\\n\\nfz_document_writer *fz_new_jpeg_pixmap_writer_with_output(fz_context *ctx, fz_output *out, const char *options)\\n{\\n\\treturn fz_new_pixmap_writer_with_output(ctx, out, options, 0, fz_write_pixmap_as_jpeg_wrapper);\\n}").replace("\\n", "\n").replace("\\t", "\t")
           stub_start = "fz_document_writer *fz_new_jpeg_pixmap_writer_with_output"
           idx_start = content.find(stub_start)
-          idx_search = content.find("fz_write_pixmap_as_jpeg_default);", idx_start)
-          if idx_start != -1 and idx_search != -1:
-              idx_end = content.find("}", idx_search) + 1
+          idx_end_search = content.find("fz_write_pixmap_as_jpeg_default);", idx_start)
+          if idx_start != -1 and idx_end_search != -1:
+              idx_end = content.find("}", idx_end_search) + 1
               content = content[:idx_start] + new_code + content[idx_end:]
-          
           old_throw = 'fz_throw(ctx, FZ_ERROR_ARGUMENT, "unknown output document format: %s", format);'
-          router = ('if (is_extension(format, "jpeg") || is_extension(format, "jpg"))\\n'
-                    '\\t\\treturn fz_new_jpeg_pixmap_writer_with_output(ctx, out, options);\\n\\t').replace("\\n", "\n").replace("\\t", "\t")
-          content = content.replace(old_throw, router + old_throw)
-          
+          router_logic = ('if (is_extension(format, "jpeg") || is_extension(format, "jpg"))\\n\\t\\treturn fz_new_jpeg_pixmap_writer_with_output(ctx, out, options);\\n\\t').replace("\\n", "\n").replace("\\t", "\t")
+          content = content.replace(old_throw, router_logic + old_throw)
           with open('source/fitz/writer.c', 'w', encoding='utf-8', newline='\n') as f:
               f.write(content)
 
@@ -95,32 +84,10 @@ jobs:
         working-directory: mupdf-source
         run: |
           call "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Auxiliary\\Build\\vcvars64.bat"
-          
-          :: Check if the script exists in root or platform/win32
-          if exist scripts\static-nmake.bat (
-            set BUILD_CMD=scripts\static-nmake.bat
-          ) else if exist platform\win32\static-nmake.bat (
-            set BUILD_CMD=platform\win32\static-nmake.bat
-          ) else (
-            :: Fallback to root nmake if batch script is missing
-            set BUILD_CMD=nmake -f Makethird && nmake -f Makefile
-          )
-
-          call %BUILD_CMD% ^
-            HAVE_MUJS=0 ^
-            HAVE_GLUT=0 ^
-            HAVE_LIBCRYPTO=0 ^
-            HAVE_LIBJPEG=1 ^
-            THIRD_LIBJPEG=1 ^
-            XCFLAGS="-Ithirdparty/libjpeg -DHAVE_LIBJPEG=1"
-          
-          if exist build\release\mutool.exe (
-            move build\release\mutool.exe ..\mutool-win.exe
-          ) else if exist build\rel\mutool.exe (
-            move build\rel\mutool.exe ..\mutool-win.exe
-          ) else if exist mutool.exe (
-            move mutool.exe ..\mutool-win.exe
-          )
+          cd platform\win32
+          :: We use the Windows-specific NMAKE Makefile inside this folder
+          nmake -f Makefile OUT=..\..\build\rel build=release HAVE_MUJS=0 HAVE_GLUT=0 HAVE_LIBCRYPTO=0 HAVE_LIBJPEG=1 THIRD_LIBJPEG=1 XCFLAGS="-I..\..\thirdparty\libjpeg -DHAVE_LIBJPEG=1"
+          copy ..\..\build\rel\mutool.exe ..\..\mutool-win.exe
 
       - name: Create Prerelease
         if: |
