@@ -6,8 +6,14 @@ on:
         description: 'MuPDF Tag (e.g., 1.27.0)'
         required: true
         default: '1.27.0'
-      build_linux: { type: boolean, default: true }
-      build_windows: { type: boolean, default: true }
+      build_linux:
+        description: 'Build Linux?'
+        type: boolean
+        default: true
+      build_windows:
+        description: 'Build Windows?'
+        type: boolean
+        default: true
 
 jobs:
   build:
@@ -35,7 +41,7 @@ jobs:
           path: mupdf-source
           submodules: recursive
 
-      - name: Apply Triple Surgery (Python)
+      - name: Apply Triple Surgery (Python Index-Based)
         if: ${{ matrix.enabled }}
         shell: python
         working-directory: mupdf-source
@@ -43,42 +49,56 @@ jobs:
           import os
 
           # 1. Modify mudraw.c (Suffix Table)
-          with open('source/tools/mudraw.c', 'r') as f:
-              data = f.read()
-          old = '{ ".png", OUT_PNG, 0 },'
-          new = old + '\n\t{ ".jpg", OUT_PNG, 0 },\n\t{ ".jpeg", OUT_PNG, 0 },'
-          with open('source/tools/mudraw.c', 'w') as f:
-              f.write(data.replace(old, new))
+          with open('source/tools/mudraw.c', 'r', encoding='utf-8') as f:
+              content = f.read()
+          old_suffix = '{ ".png", OUT_PNG, 0 },'
+          new_suffix = old_suffix + '\n\t{ ".jpg", OUT_PNG, 0 },\n\t{ ".jpeg", OUT_PNG, 0 },'
+          with open('source/tools/mudraw.c', 'w', encoding='utf-8', newline='\n') as f:
+              f.write(content.replace(old_suffix, new_suffix))
 
-          # 2. Modify writer.c (Router and Wrapper)
-          with open('source/fitz/writer.c', 'r') as f:
-              lines = f.readlines()
+          # 2. Modify writer.c
+          with open('source/fitz/writer.c', 'r', encoding='utf-8') as f:
+              content = f.read()
 
-          new_lines = []
-          for line in lines:
-              # Insert Router before the error throw
-              if 'unknown output document format' in line:
-                  new_lines.append('\tif (is_extension(format, "jpeg") || is_extension(format, "jpg"))\n')
-                  new_lines.append('\t\treturn fz_new_jpeg_pixmap_writer_with_output(ctx, out, options);\n')
-              new_lines.append(line)
+          # Part A: Define the new code exactly with explicit tabs/newlines
+          new_code = (
+              "static void fz_write_pixmap_as_jpeg_wrapper(fz_context *ctx, fz_output *out, fz_pixmap *pixmap)\\n"
+              "{\\n"
+              "\\tfz_write_pixmap_as_jpeg(ctx, out, pixmap, 80, 0);\\n"
+              "}\\n\\n"
+              "fz_document_writer *fz_new_jpeg_pixmap_writer_with_output(fz_context *ctx, fz_output *out, const char *options)\\n"
+              "{\\n"
+              "\\treturn fz_new_pixmap_writer_with_output(ctx, out, options, 0, fz_write_pixmap_as_jpeg_wrapper);\\n"
+              "}"
+          ).replace("\\n", "\n").replace("\\t", "\t")
 
-          # Add Wrapper at the very end
-          wrapper = """
-          static void fz_write_pixmap_as_jpeg_wrapper(fz_context *ctx, fz_output *out, fz_pixmap *pixmap) {
-              fz_write_pixmap_as_jpeg(ctx, out, pixmap, 80, 0);
-          }
-          fz_document_writer *fz_new_jpeg_pixmap_writer_with_output(fz_context *ctx, fz_output *out, const char *options) {
-              return fz_new_pixmap_writer_with_output(ctx, out, options, 0, fz_write_pixmap_as_jpeg_wrapper);
-          }
-          """
+          # Part B: Search and replace the stub by finding the function name and its specific end
+          stub_start = "fz_document_writer *fz_new_jpeg_pixmap_writer_with_output"
+          stub_end = "fz_write_pixmap_as_jpeg_default);\\n}"
           
-          # Clean up existing stubs to avoid multiple definitions
-          content = "".join(new_lines)
-          import re
-          content = re.sub(r'fz_document_writer\s+\*fz_new_jpeg_pixmap_writer_with_output\(.*?\)\s*\{.*?\}', '', content, flags=re.DOTALL)
+          idx_start = content.find(stub_start)
+          # We search for the end string relative to the start to be precise
+          idx_end_search = content.find("fz_write_pixmap_as_jpeg_default);", idx_start)
           
-          with open('source/fitz/writer.c', 'w') as f:
-              f.write(content + wrapper)
+          if idx_start != -1 and idx_end_search != -1:
+              # Find the actual closing brace after that return statement
+              idx_end = content.find("}", idx_end_search) + 1
+              content = content[:idx_start] + new_code + content[idx_end:]
+          else:
+              print("Error: Could not find the JPEG writer stub in writer.c")
+              exit(1)
+
+          # Part C: Add the Router logic before the final throw
+          old_throw = 'fz_throw(ctx, FZ_ERROR_ARGUMENT, "unknown output document format: %s", format);'
+          router_logic = (
+              'if (is_extension(format, "jpeg") || is_extension(format, "jpg"))\\n'
+              '\\t\\treturn fz_new_jpeg_pixmap_writer_with_output(ctx, out, options);\\n\\t'
+          ).replace("\\n", "\n").replace("\\t", "\t")
+          
+          content = content.replace(old_throw, router_logic + old_throw)
+
+          with open('source/fitz/writer.c', 'w', encoding='utf-8', newline='\n') as f:
+              f.write(content)
 
       - name: Build Linux
         if: ${{ matrix.enabled && matrix.target == 'linux' }}
@@ -93,9 +113,9 @@ jobs:
         shell: cmd
         working-directory: mupdf-source
         run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          call "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Auxiliary\\Build\\vcvars64.bat"
           nmake -f makefile.msvc CFG=rel HAVE_X11=no HAVE_GLUT=no HAVE_MUJS=no HAVE_LIBCRYPTO=no HAVE_LIBJPEG=yes THIRD_LIBJPEG=yes XCFLAGS="-Ithirdparty/libjpeg -DHAVE_LIBJPEG=1"
-          copy build\rel\mutool.exe ..\mutool-win.exe
+          copy build\\rel\\mutool.exe ..\\mutool-win.exe
 
       - name: Create Prerelease
         if: ${{ matrix.enabled }}
