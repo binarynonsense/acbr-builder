@@ -6,14 +6,8 @@ on:
         description: 'MuPDF Tag (e.g., 1.27.0)'
         required: true
         default: '1.27.0'
-      build_linux:
-        description: 'Build Linux?'
-        type: boolean
-        default: true
-      build_windows:
-        description: 'Build Windows?'
-        type: boolean
-        default: true
+      build_linux: { type: boolean, default: true }
+      build_windows: { type: boolean, default: true }
 
 jobs:
   build:
@@ -29,7 +23,6 @@ jobs:
           - os: windows-latest
             target: windows
             enabled: ${{ github.event.inputs.build_windows }}
-    # Remove the 'if' from here. We check 'enabled' in each step instead.
     permissions:
       contents: write
     steps:
@@ -42,22 +35,50 @@ jobs:
           path: mupdf-source
           submodules: recursive
 
-      - name: Apply Triple Surgery
+      - name: Apply Triple Surgery (Python)
         if: ${{ matrix.enabled }}
-        shell: bash
+        shell: python
         working-directory: mupdf-source
         run: |
-          sed -i '/{ ".png", OUT_PNG, 0 },/a \	{ ".jpg", OUT_PNG, 0 },\n\	{ ".jpeg", OUT_PNG, 0 },' source/tools/mudraw.c
-          sed -i '/unknown output document format/i \	if (is_extension(format, "jpeg") || is_extension(format, "jpg")) return fz_new_jpeg_pixmap_writer_with_output(ctx, out, options);' source/fitz/writer.c
-          sed -i '/fz_new_jpeg_pixmap_writer_with_output/,/}/d' source/fitz/writer.c
-          cat >> source/fitz/writer.c <<EOF
+          import os
+
+          # 1. Modify mudraw.c (Suffix Table)
+          with open('source/tools/mudraw.c', 'r') as f:
+              data = f.read()
+          old = '{ ".png", OUT_PNG, 0 },'
+          new = old + '\n\t{ ".jpg", OUT_PNG, 0 },\n\t{ ".jpeg", OUT_PNG, 0 },'
+          with open('source/tools/mudraw.c', 'w') as f:
+              f.write(data.replace(old, new))
+
+          # 2. Modify writer.c (Router and Wrapper)
+          with open('source/fitz/writer.c', 'r') as f:
+              lines = f.readlines()
+
+          new_lines = []
+          for line in lines:
+              # Insert Router before the error throw
+              if 'unknown output document format' in line:
+                  new_lines.append('\tif (is_extension(format, "jpeg") || is_extension(format, "jpg"))\n')
+                  new_lines.append('\t\treturn fz_new_jpeg_pixmap_writer_with_output(ctx, out, options);\n')
+              new_lines.append(line)
+
+          # Add Wrapper at the very end
+          wrapper = """
           static void fz_write_pixmap_as_jpeg_wrapper(fz_context *ctx, fz_output *out, fz_pixmap *pixmap) {
               fz_write_pixmap_as_jpeg(ctx, out, pixmap, 80, 0);
           }
           fz_document_writer *fz_new_jpeg_pixmap_writer_with_output(fz_context *ctx, fz_output *out, const char *options) {
               return fz_new_pixmap_writer_with_output(ctx, out, options, 0, fz_write_pixmap_as_jpeg_wrapper);
           }
-          EOF
+          """
+          
+          # Clean up existing stubs to avoid multiple definitions
+          content = "".join(new_lines)
+          import re
+          content = re.sub(r'fz_document_writer\s+\*fz_new_jpeg_pixmap_writer_with_output\(.*?\)\s*\{.*?\}', '', content, flags=re.DOTALL)
+          
+          with open('source/fitz/writer.c', 'w') as f:
+              f.write(content + wrapper)
 
       - name: Build Linux
         if: ${{ matrix.enabled && matrix.target == 'linux' }}
