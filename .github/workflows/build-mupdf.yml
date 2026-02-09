@@ -83,7 +83,8 @@ jobs:
         if: matrix.target == 'windows' && github.event.inputs.build_windows == 'true'
         working-directory: mupdf-source/platform/win32
         run: |
-          msbuild mupdf.sln /p:Configuration=Release /p:Platform=x64 /t:mutool /p:PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;HAVE_LIBJPEG;HAVE_MUJS=0;HAVE_LIBCRYPTO=0;HAVE_GLUT=0"
+          # Use escaped semicolons (%3B) so MSBuild doesn't treat them as switches
+          msbuild mupdf.sln /p:Configuration=Release /p:Platform=x64 /t:mutool /p:PreprocessorDefinitions="WIN32%3BNDEBUG%3B_CONSOLE%3BHAVE_LIBJPEG%3BHAVE_MUJS=0%3BHAVE_LIBCRYPTO=0%3BHAVE_GLUT=0"
           if (Test-Path "x64\Release\mutool.exe") {
             Copy-Item "x64\Release\mutool.exe" "..\..\..\mutool-win.exe"
           }
