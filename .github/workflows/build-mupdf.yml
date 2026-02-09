@@ -72,15 +72,22 @@ jobs:
           make -j$(nproc) build=release OUT=build/universal HAVE_X11=no HAVE_GLUT=no HAVE_MUJS=no HAVE_LIBCRYPTO=no USE_SYSTEM_LIBS=no HAVE_LIBJPEG=yes SHARE_JPEG=no XCFLAGS="-Ithirdparty/libjpeg -DHAVE_LIBJPEG=1"
           strip --strip-all build/universal/mutool
 
+      # --- Windows Specific ---
+      - name: Setup MSBuild
+        if: matrix.target == 'windows' && github.event.inputs.build_windows == 'true'
+        uses: microsoft/setup-msbuild@v2
+
       - name: Build Windows (MSBuild)
         if: matrix.target == 'windows' && github.event.inputs.build_windows == 'true'
         working-directory: mupdf-source
         run: |
           cd platform/win32
-          # We use MSBuild to target the mutool project specifically
-          # PreprocessorDefinitions override the HAVE_MUJS etc. flags
           msbuild mupdf.sln /p:Configuration=Release /p:Platform=x64 /t:mutool /p:PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;HAVE_LIBJPEG;HAVE_MUJS=0;HAVE_LIBCRYPTO=0;HAVE_GLUT=0"
-          copy x64\Release\mutool.exe ..\..\mutool-win.exe
+          if (Test-Path "x64\Release\mutool.exe") {
+            Copy-Item "x64\Release\mutool.exe" "..\..\mutool-win.exe"
+          } elseif (Test-Path "Release\mutool.exe") {
+            Copy-Item "Release\mutool.exe" "..\..\mutool-win.exe"
+          }
 
       - name: Create Prerelease
         if: |
