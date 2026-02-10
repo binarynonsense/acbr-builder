@@ -1,4 +1,4 @@
-name: Build Universal MuPDF (Clean AVX2)
+name: Build Universal MuPDF
 on:
   workflow_dispatch:
     inputs:
@@ -35,13 +35,12 @@ jobs:
           path: mupdf-source
           submodules: recursive
 
-      - name: Build Linux (Clean AVX2 Static)
+      - name: Build Linux (Turbo Optimized Static)
         if: matrix.target == 'linux' && github.event.inputs.build_linux == 'true'
         working-directory: mupdf-source
         run: |
           sudo apt update && sudo apt install -y build-essential pkg-config nasm
-          # -mavx2: Crucial for the 0.44s rendering speed
-          # -DNDEBUG: Strips debug code for smaller/faster binary
+          # Kept your original XCFLAGS for 11s/0.44s performance
           export XCFLAGS="-O3 -march=x86-64-v3 -mavx2 -mfpmath=sse -msse4.2 -flto -DNDEBUG"
           make -j$(nproc) build=release OUT=build/universal \
             HAVE_X11=no HAVE_GLUT=no HAVE_MUJS=no HAVE_LIBCRYPTO=no \
@@ -56,7 +55,7 @@ jobs:
         if: matrix.target == 'windows' && github.event.inputs.build_windows == 'true'
         working-directory: mupdf-source/platform/win32
         run: |
-          # Enable AVX2 and Link Time Code Generation (LTCG) for maximum performance
+          # Restored original MSBuild optimization settings
           msbuild mupdf.sln /p:Configuration=Release /p:Platform=x64 /t:mutool `
             /p:PreprocessorDefinitions="WIN32%3BNDEBUG%3B_CONSOLE%3BHAVE_LIBJPEG%3BHAVE_MUJS=0%3BHAVE_LIBCRYPTO=0%3BHAVE_GLUT=0" `
             /p:ClCompile="Optimization=MaxSpeed%3BEnableEnhancedInstructionSet=AdvancedVectorExtensions2%3BWholeProgramOptimization=true%3BRuntimeLibrary=MultiThreaded" `
@@ -71,8 +70,9 @@ jobs:
           (matrix.target == 'windows' && github.event.inputs.build_windows == 'true')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: mupdf-clean-avx2-${{ github.event.inputs.mupdf_tag }}-${{ github.run_number }}
-          name: MuPDF Clean AVX2 ${{ github.event.inputs.mupdf_tag }}
+          # Restored your original tag naming convention
+          tag_name: mupdf-${{ github.event.inputs.mupdf_tag }}-${{ github.run_number }}
+          name: MuPDF ${{ github.event.inputs.mupdf_tag }} Build ${{ github.run_number }}
           prerelease: true
           files: |
             mupdf-source/COPYING
