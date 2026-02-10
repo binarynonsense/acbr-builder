@@ -28,7 +28,7 @@ jobs:
         if: |
           (matrix.target == 'linux' && github.event.inputs.build_linux == 'true') ||
           (matrix.target == 'windows' && github.event.inputs.build_windows == 'true')
-        uses: checkout/action@v4
+        uses: actions/checkout@v4
         with:
           repository: ArtifexSoftware/mupdf
           ref: ${{ github.event.inputs.mupdf_tag }}
