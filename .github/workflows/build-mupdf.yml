@@ -67,24 +67,32 @@ jobs:
           with open('source/fitz/writer.c', 'w', encoding='utf-8', newline='\n') as f:
               f.write(content)
 
-      - name: Build Linux
+      - name: Build Linux (Optimized Static)
         if: matrix.target == 'linux' && github.event.inputs.build_linux == 'true'
         working-directory: mupdf-source
         run: |
           sudo apt update && sudo apt install -y build-essential pkg-config
-          make -j$(nproc) build=release OUT=build/universal HAVE_X11=no HAVE_GLUT=no HAVE_MUJS=no HAVE_LIBCRYPTO=no USE_SYSTEM_LIBS=no HAVE_LIBJPEG=yes SHARE_JPEG=no XCFLAGS="-Ithirdparty/libjpeg -DHAVE_LIBJPEG=1"
+          export XCFLAGS="-O3 -march=x86-64-v3 -flto -DNDEBUG -Ithirdparty/libjpeg -DHAVE_LIBJPEG=1"
+          make -j$(nproc) build=release OUT=build/universal \
+            HAVE_X11=no HAVE_GLUT=no HAVE_MUJS=no HAVE_LIBCRYPTO=no \
+            USE_SYSTEM_LIBS=no HAVE_LIBJPEG=yes SHARE_JPEG=no
           strip --strip-all build/universal/mutool
 
       - name: Setup MSBuild
         if: matrix.target == 'windows' && github.event.inputs.build_windows == 'true'
         uses: microsoft/setup-msbuild@v2
 
-      - name: Build Windows (MSBuild)
+      - name: Build Windows (Optimized MSBuild)
         if: matrix.target == 'windows' && github.event.inputs.build_windows == 'true'
         working-directory: mupdf-source/platform/win32
         run: |
-          # Use escaped semicolons (%3B) so MSBuild doesn't treat them as switches
-          msbuild mupdf.sln /p:Configuration=Release /p:Platform=x64 /t:mutool /p:PreprocessorDefinitions="WIN32%3BNDEBUG%3B_CONSOLE%3BHAVE_LIBJPEG%3BHAVE_MUJS=0%3BHAVE_LIBCRYPTO=0%3BHAVE_GLUT=0"
+          # Added ClCompile flags for Windows:
+          # /O2: Maximize Speed
+          # /arch:AVX2: Enable SIMD for image math
+          # /GL: Whole Program Optimization (pairs with /LTCG)
+          msbuild mupdf.sln /p:Configuration=Release /p:Platform=x64 /t:mutool `
+            /p:PreprocessorDefinitions="WIN32%3BNDEBUG%3B_CONSOLE%3BHAVE_LIBJPEG%3BHAVE_MUJS=0%3BHAVE_LIBCRYPTO=0%3BHAVE_GLUT=0" `
+            /p:ClCompile="Optimization=MaxSpeed%3BEnableEnhancedInstructionSet=AdvancedVectorExtensions2%3BWholeProgramOptimization=true"
           if (Test-Path "x64\Release\mutool.exe") {
             Copy-Item "x64\Release\mutool.exe" "..\..\..\mutool-win.exe"
           }
