@@ -70,7 +70,6 @@ jobs:
           (matrix.target == 'windows' && github.event.inputs.build_windows == 'true')
         uses: softprops/action-gh-release@v2
         with:
-          # Restored your original tag naming convention
           tag_name: mupdf-${{ github.event.inputs.mupdf_tag }}-${{ github.run_number }}
           name: MuPDF ${{ github.event.inputs.mupdf_tag }} Build ${{ github.run_number }}
           prerelease: true
