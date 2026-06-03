@@ -19,19 +19,16 @@ jobs:
         run: |
           MAIN_REPO="${{ github.repository_owner }}/comic-book-reader"
           
-          echo "=== Raw CLI output trace ==="
-          gh release list -R "$MAIN_REPO" --limit 3 --exclude-pre-releases --json tagName
-          echo "============================"
-
           STABLE_VERSION=$(gh release list -R "$MAIN_REPO" --limit 1 --exclude-pre-releases --json tagName --jq '.[0].tagName' 2>/dev/null)
           
           if [ -z "$STABLE_VERSION" ] || [ "$STABLE_VERSION" = "null" ]; then
-            echo "Warning: CLI returned empty. Forcing hard fallback to prevent NONE text."
+            echo "Warning: Extraction failed. Forcing hard fallback."
             STABLE_VERSION="UNKNOWN"
           fi
           
           export STABLE_UPPER=$(echo "$STABLE_VERSION" | tr '[:lower:]' '[:upper:]')
-          
+          echo "Isolating version string: $STABLE_UPPER"
+
           STABLE_CHAR_COUNT=${#STABLE_UPPER}
           export STABLE_RIGHT_W=$(( (STABLE_CHAR_COUNT * 9) + 30 ))
           export STABLE_TOTAL_W=$(( 90 + STABLE_RIGHT_W ))
