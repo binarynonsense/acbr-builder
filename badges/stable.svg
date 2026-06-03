@@ -1,12 +1,12 @@
-<svg xmlns="http://w3.org" width="TOTAL_W" height="28">
+<svg xmlns="http://w3.org" width="156" height="28">
   <g shape-rendering="crispEdges">
     <rect width="90" height="28" fill="#555555"/>
-    <rect x="90" width="RIGHT_W" height="28" fill="#007ec6"/>
+    <rect x="90" width="66" height="28" fill="#007ec6"/>
   </g>
   <g fill="#ffffff" text-anchor="middle" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-weight="bold" font-size="10" letter-spacing="1.5">
     <text x="45" y="17.5" fill="#010101" fill-opacity=".3">STABLE</text>
     <text x="45" y="16.5">STABLE</text>
-    <text x="TEXT_X" y="17.5" fill="#010101" fill-opacity=".3" textLength="TEXT_L">VERSION_STR</text>
-    <text x="TEXT_X" y="16.5" textLength="TEXT_L">VERSION_STR</text>
+    <text x="123" y="17.5" fill="#010101" fill-opacity=".3" textLength="51">NONE</text>
+    <text x="123" y="16.5" textLength="51">NONE</text>
   </g>
 </svg>
