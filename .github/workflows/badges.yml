@@ -27,8 +27,8 @@ jobs:
           export BADGE_PADDING=24
           export CHAR_MULTIPLIER_X10=74
 
-          STABLE_VERSION=$(gh release list -R "$MAIN_REPO" --limit 1 --exclude-pre-releases --json tagName --jq '..tagName' 2>/dev/null || echo "")
-          LATEST_VERSION=$(gh release list -R "$MAIN_REPO" --limit 1 --json tagName --jq '..tagName' 2>/dev/null || echo "")
+          STABLE_VERSION=$(gh release list -R "$MAIN_REPO" --limit 1 --exclude-pre-releases --json tagName --jq '.[0].tagName' 2>/dev/null || echo "")
+          LATEST_VERSION=$(gh release list -R "$MAIN_REPO" --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || echo "")
           
           DOWNLOADS_RAW=$(gh api graphql --paginate -f query='
             query($owner: String!, $repo: String!, $endCursor: String) {
