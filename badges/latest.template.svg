@@ -1,0 +1,12 @@
+<svg xmlns="http://w3.org" width="${LATEST_TOTAL_W}" height="28">
+  <g shape-rendering="crispEdges">
+    <rect width="90" height="28" fill="#555555"/>
+    <rect x="90" width="${LATEST_RIGHT_W}" height="28" fill="${LATEST_COLOR}"/>
+  </g>
+  <g fill="#ffffff" text-anchor="middle" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-weight="bold" font-size="11" letter-spacing="1.5">
+    <text x="45" y="17.5" fill="#010101" fill-opacity=".3">LATEST</text>
+    <text x="45" y="16.5">LATEST</text>
+    <text x="${LATEST_TEXT_X}" y="17.5" fill="#010101" fill-opacity=".3" textLength="${LATEST_TEXT_L}">${LATEST_UPPER}</text>
+    <text x="${LATEST_TEXT_X}" y="16.5" textLength="${LATEST_TEXT_L}">${LATEST_UPPER}</text>
+  </g>
+</svg>
