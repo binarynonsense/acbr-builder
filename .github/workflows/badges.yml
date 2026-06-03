@@ -30,10 +30,11 @@ jobs:
           echo "Isolating version string: $STABLE_UPPER"
 
           STABLE_CHAR_COUNT=${#STABLE_UPPER}
-          export STABLE_RIGHT_W=$(( (STABLE_CHAR_COUNT * 9) + 30 ))
+          RAW_TEXT_WIDTH=$(( (STABLE_CHAR_COUNT * 95) / 10 ))          
+          export STABLE_RIGHT_W=$(( RAW_TEXT_WIDTH + 18 ))
           export STABLE_TOTAL_W=$(( 90 + STABLE_RIGHT_W ))
           export STABLE_TEXT_X=$(( 90 + (STABLE_RIGHT_W / 2) ))
-          export STABLE_TEXT_L=$(( STABLE_RIGHT_W - 15 ))
+          export STABLE_TEXT_L=$(( STABLE_RIGHT_W - 10 ))
           
           envsubst < badges/stable.template.svg > badges/stable.svg
 
@@ -47,7 +48,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "Badges are already up to date. Skipping commit and purge."
           else
-            git commit -m "badge: sync stable release metric"
+            git commit -m "Update badges"
             git push
             
             STABLE_RAW="https://raw.githubusercontent.com/${{ github.repository_owner }}/acbr-builder/main/badges/stable.svg"
