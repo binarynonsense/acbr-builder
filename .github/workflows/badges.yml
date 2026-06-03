@@ -27,11 +27,13 @@ jobs:
           COLOR_LATEST_DIFF="#fe7d37"
           
           export BADGE_PADDING=24
-          export CHAR_MULTIPLIER_X10=71
+          # bash can't handle decimals, multiply by 10 and later divide by it
+          export CHAR_WIDTH_X10=71
 
           STABLE_VERSION=$(gh release list -R "$MAIN_REPO" --limit 1 --exclude-pre-releases --json tagName --jq '.[0].tagName' 2>/dev/null || echo "")
           LATEST_VERSION=$(gh release list -R "$MAIN_REPO" --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || echo "")
-          
+
+          # get rows of download numbers using graphql and use awk to add them
           DOWNLOADS_RAW=$(gh api graphql --paginate -f query='
             query($owner: String!, $repo: String!, $endCursor: String) {
               repository(owner: $owner, name: $repo) {
@@ -48,10 +50,7 @@ jobs:
 
           if [ -z "$STABLE_VERSION" ] || [ "$STABLE_VERSION" = "null" ]; then STABLE_VERSION="UNKNOWN"; fi
           if [ -z "$LATEST_VERSION" ] || [ "$LATEST_VERSION" = "null" ]; then LATEST_VERSION="UNKNOWN"; fi
-          if [ -z "$DOWNLOADS_RAW" ] || [ "$DOWNLOADS_RAW" = "null" ]; then DOWNLOADS_RAW="0"; fi
-
-          DOWNLOADS_RAW=$(echo "$DOWNLOADS_RAW" | tr -cd '0-9')          
-          if [ -z "$DOWNLOADS_RAW" ]; then DOWNLOADS_RAW="0"; fi
+          if [ -z "$DOWNLOADS_RAW" ] || [[ "$DOWNLOADS_RAW" =~ [^0-9] ]]; then DOWNLOADS_RAW="0"; fi
 
           export STABLE_UPPER=$(echo "$STABLE_VERSION" | tr '[:lower:]' '[:upper:]')
           export LATEST_UPPER=$(echo "$LATEST_VERSION" | tr '[:lower:]' '[:upper:]')
@@ -63,7 +62,7 @@ jobs:
             export LATEST_COLOR="$COLOR_LATEST_DIFF"
           fi
 
-          generate_badge_math() {
+          generate_svg_params() {
             local label="$1"
             local val="$2"
             local color="$3"
@@ -74,23 +73,24 @@ jobs:
             export BADGE_COLOR="$color"
 
             local left_char_count=${#LABEL_UPPER}
-            local left_text_width=$(( (left_char_count * CHAR_MULTIPLIER_X10) / 10 ))
+            local left_text_width=$(( (left_char_count * CHAR_WIDTH_X10) / 10 ))
             export LEFT_W=$(( left_text_width + BADGE_PADDING ))
             export LEFT_X=$(( LEFT_W / 2 ))
 
             local right_char_count=${#VAL_UPPER}
-            local right_text_width=$(( (right_char_count * CHAR_MULTIPLIER_X10) / 10 ))
+            local right_text_width=$(( (right_char_count * CHAR_WIDTH_X10) / 10 ))
             export RIGHT_W=$(( right_text_width + BADGE_PADDING ))
             export RIGHT_X=$(( LEFT_W + (RIGHT_W / 2) ))
 
             export TOTAL_W=$(( LEFT_W + RIGHT_W ))
 
+            # envsubst substitutes the exported vars in the template text
             envsubst < badges/template.svg > "badges/${output_filename}"
           }
 
-          generate_badge_math "stable" "$STABLE_VERSION" "$STABLE_COLOR" "stable.svg"
-          generate_badge_math "latest" "$LATEST_VERSION" "$LATEST_COLOR" "latest.svg"
-          generate_badge_math "downloads" "$DOWNLOADS_RAW" "$DL_COLOR" "downloads.svg"
+          generate_svg_params "stable" "$STABLE_VERSION" "$STABLE_COLOR" "stable.svg"
+          generate_svg_params "latest" "$LATEST_VERSION" "$LATEST_COLOR" "latest.svg"
+          generate_svg_params "downloads" "$DOWNLOADS_RAW" "$DL_COLOR" "downloads.svg"
 
       - name: Commit, Push and Purge Cache
         run: |
@@ -105,7 +105,7 @@ jobs:
             git commit -m "Update badges"
             git push
 
-            echo "Waiting 30 seconds for full raw CDN replication..."
+            echo "Waiting 30 seconds so the CDN updates..."
             sleep 30
             
             STABLE_RAW="https://raw.githubusercontent.com/${{ github.repository_owner }}/acbr-builder/main/badges/stable.svg"
@@ -116,6 +116,8 @@ jobs:
             LATEST_RAW_CLEAN=$(echo "$LATEST_RAW" | tr -d ' ')
             DOWNLOADS_RAW_CLEAN=$(echo "$DOWNLOADS_RAW" | tr -d ' ')
 
+            # ref: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/about-anonymized-urls
+            # ref: https://stackoverflow.com/questions/73666498/how-do-i-generate-the-github-camo-url-for-an-image-used-in-a-github-wiki
             STABLE_HASH=$(echo -n "$STABLE_RAW_CLEAN" | openssl dgst -sha1 -hmac "" | cut -d' ' -f2)
             LATEST_HASH=$(echo -n "$LATEST_RAW_CLEAN" | openssl dgst -sha1 -hmac "" | cut -d' ' -f2)
             DOWNLOADS_HASH=$(echo -n "$DOWNLOADS_RAW_CLEAN" | openssl dgst -sha1 -hmac "" | cut -d' ' -f2)
