@@ -1,0 +1,56 @@
+name: Badges
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sync-badges:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Generate Stable Badge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          MAIN_REPO="${{ github.repository_owner }}/comic-book-reader"
+          STABLE_VERSION=$(gh release list -R "$MAIN_REPO" --limit 1 --exclude-pre-releases --json tagName --jq '..tagName' 2>/dev/null || echo "none")
+          export STABLE_UPPER=$(echo "$STABLE_VERSION" | tr '[:lower:]' '[:upper:]')
+          
+          STABLE_CHAR_COUNT=${#STABLE_UPPER}
+          export STABLE_RIGHT_W=$(( (STABLE_CHAR_COUNT * 9) + 30 ))
+          export STABLE_TOTAL_W=$(( 90 + STABLE_RIGHT_W ))
+          export STABLE_TEXT_X=$(( 90 + (STABLE_RIGHT_W / 2) ))
+          export STABLE_TEXT_L=$(( STABLE_RIGHT_W - 15 ))
+          
+          envsubst < badges/stable.template.svg > badges/stable.svg
+
+      - name: Commit and Push Changes
+        id: git_push
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          git add badges/stable.svg
+          
+          if git diff --staged --quiet; then
+            echo "CHANGED=false" >> $GITHUB_OUTPUT
+            echo "Badges are up to date."
+          else
+            git commit -m "badge: sync stable release metric"
+            git push
+            echo "CHANGED=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Purge GitHub Camo Cache
+        if: steps.git_push.outputs.CHANGED == 'true'
+        run: |
+          STABLE_RAW="https://raw.githubusercontent.com/${{ github.repository_owner }}/acbr-builder/main/badges/stable.svg"
+          STABLE_RAW_CLEAN=$(echo "$STABLE_RAW" | tr -d ' ')
+          STABLE_HASH=$(echo -n "$STABLE_RAW_CLEAN" | openssl dgst -sha1 -hmac "" | cut -d' ' -f2)
+          
+          curl -X PURGE "https://camo.githubusercontent.com/${STABLE_HASH}" || true
