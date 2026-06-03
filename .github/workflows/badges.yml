@@ -13,48 +13,88 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Generate Stable Badge
+      - name: Generate Badges
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           MAIN_REPO="${{ github.repository_owner }}/comic-book-reader"
           
-          STABLE_VERSION=$(gh release list -R "$MAIN_REPO" --limit 1 --exclude-pre-releases --json tagName --jq '.[0].tagName' 2>/dev/null)
+          export STABLE_COLOR="#007ec6"
+          export DL_COLOR="#28a745"
+          COLOR_LATEST_SAME="#007ec6"
+          COLOR_LATEST_DIFF="#fe7d37"
           
-          if [ -z "$STABLE_VERSION" ] || [ "$STABLE_VERSION" = "null" ]; then
-            echo "Warning: Extraction failed. Forcing hard fallback."
-            STABLE_VERSION="UNKNOWN"
-          fi
+          export BADGE_PADDING=18
+
+          STABLE_VERSION=$(gh release list -R "$MAIN_REPO" --limit 1 --exclude-pre-releases --json tagName --jq '..tagName' 2>/dev/null)
+          LATEST_VERSION=$(gh release list -R "$MAIN_REPO" --limit 1 --json tagName --jq '..tagName' 2>/dev/null)
+          DOWNLOADS_RAW=$(gh release list -R "$MAIN_REPO" --all --json assets --jq '[.[].assets[].download_count] | add' 2>/dev/null)
+          
+          if [ -z "$STABLE_VERSION" ] || [ "$STABLE_VERSION" = "null" ]; then STABLE_VERSION="UNKNOWN"; fi
+          if [ -z "$LATEST_VERSION" ] || [ "$LATEST_VERSION" = "null" ]; then LATEST_VERSION="UNKNOWN"; fi
+          if [ -z "$DOWNLOADS_RAW" ] || [ "$DOWNLOADS_RAW" = "null" ]; then DOWNLOADS_RAW="0"; fi
           
           export STABLE_UPPER=$(echo "$STABLE_VERSION" | tr '[:lower:]' '[:upper:]')
-          echo "Isolating version string: $STABLE_UPPER"
+          export LATEST_UPPER=$(echo "$LATEST_VERSION" | tr '[:lower:]' '[:upper:]')
+          export DOWNLOADS_COUNT="$DOWNLOADS_RAW"
+
+          if [ "$STABLE_VERSION" = "$LATEST_VERSION" ]; then
+            export LATEST_COLOR="$COLOR_LATEST_SAME"
+          else
+            export LATEST_COLOR="$COLOR_LATEST_DIFF"
+          fi
 
           STABLE_CHAR_COUNT=${#STABLE_UPPER}
-          RAW_TEXT_WIDTH=$(( (STABLE_CHAR_COUNT * 95) / 10 ))          
-          export STABLE_RIGHT_W=$(( RAW_TEXT_WIDTH + 18 ))
+          STABLE_RAW_TEXT_WIDTH=$(( (STABLE_CHAR_COUNT * 95) / 10 ))          
+          export STABLE_RIGHT_W=$(( STABLE_RAW_TEXT_WIDTH + BADGE_PADDING ))
           export STABLE_TOTAL_W=$(( 90 + STABLE_RIGHT_W ))
           export STABLE_TEXT_X=$(( 90 + (STABLE_RIGHT_W / 2) ))
-          export STABLE_TEXT_L=$(( STABLE_RIGHT_W - 10 ))
+          export STABLE_TEXT_L=$(( STABLE_RIGHT_W - (BADGE_PADDING - 8) ))
           
+          LATEST_CHAR_COUNT=${#LATEST_UPPER}
+          LATEST_RAW_TEXT_WIDTH=$(( (LATEST_CHAR_COUNT * 95) / 10 ))          
+          export LATEST_RIGHT_W=$(( LATEST_RAW_TEXT_WIDTH + BADGE_PADDING ))
+          export LATEST_TOTAL_W=$(( 90 + LATEST_RIGHT_W ))
+          export LATEST_TEXT_X=$(( 90 + (LATEST_RIGHT_W / 2) ))
+          export LATEST_TEXT_L=$(( LATEST_RIGHT_W - (BADGE_PADDING - 8) ))
+          
+          DL_CHAR_COUNT=${#DOWNLOADS_COUNT}
+          DL_RAW_TEXT_WIDTH=$(( (DL_CHAR_COUNT * 95) / 10 ))          
+          export DL_RIGHT_W=$(( DL_RAW_TEXT_WIDTH + BADGE_PADDING ))
+          export DL_TOTAL_W=$(( 130 + DL_RIGHT_W ))
+          export DL_TEXT_X=$(( 130 + (DL_RIGHT_W / 2) ))
+          export DL_TEXT_L=$(( DL_RIGHT_W - (BADGE_PADDING - 8) ))
+
           envsubst < badges/stable.template.svg > badges/stable.svg
+          envsubst < badges/latest.template.svg > badges/latest.svg
+          envsubst < badges/downloads.template.svg > badges/downloads.svg
 
       - name: Commit, Push and Purge Cache
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           
-          git add badges/stable.svg
+          git add badges/stable.svg badges/latest.svg badges/downloads.svg
           
           if git diff --staged --quiet; then
-            echo "Badges are already up to date. Skipping commit and purge."
+            echo "Up to date."
           else
             git commit -m "Update badges"
             git push
             
             STABLE_RAW="https://raw.githubusercontent.com/${{ github.repository_owner }}/acbr-builder/main/badges/stable.svg"
-            STABLE_RAW_CLEAN=$(echo "$STABLE_RAW" | tr -d ' ')
-            STABLE_HASH=$(echo -n "$STABLE_RAW_CLEAN" | openssl dgst -sha1 -hmac "" | cut -d' ' -f2)
+            LATEST_RAW="https://raw.githubusercontent.com/${{ github.repository_owner }}/acbr-builder/main/badges/latest.svg"
+            DOWNLOADS_RAW="https://raw.githubusercontent.com/${{ github.repository_owner }}/acbr-builder/main/badges/downloads.svg"
             
-            echo "Pushed changes successfully. Sending purge request for hash: ${STABLE_HASH}"
+            STABLE_RAW_CLEAN=$(echo "$STABLE_RAW" | tr -d ' ')
+            LATEST_RAW_CLEAN=$(echo "$LATEST_RAW" | tr -d ' ')
+            DOWNLOADS_RAW_CLEAN=$(echo "$DOWNLOADS_RAW" | tr -d ' ')
+
+            STABLE_HASH=$(echo -n "$STABLE_RAW_CLEAN" | openssl dgst -sha1 -hmac "" | cut -d' ' -f2)
+            LATEST_HASH=$(echo -n "$LATEST_RAW_CLEAN" | openssl dgst -sha1 -hmac "" | cut -d' ' -f2)
+            DOWNLOADS_HASH=$(echo -n "$DOWNLOADS_RAW_CLEAN" | openssl dgst -sha1 -hmac "" | cut -d' ' -f2)
+            
             curl -X PURGE "https://camo.githubusercontent.com/${STABLE_HASH}" || true
+            curl -X PURGE "https://camo.githubusercontent.com/${LATEST_HASH}" || true
+            curl -X PURGE "https://camo.githubusercontent.com/${DOWNLOADS_HASH}" || true
           fi
