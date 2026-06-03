@@ -102,6 +102,9 @@ jobs:
           else
             git commit -m "Update badges"
             git push
+
+            echo "Waiting 30 seconds for full raw CDN replication..."
+            sleep 30
             
             STABLE_RAW="https://raw.githubusercontent.com/${{ github.repository_owner }}/acbr-builder/main/badges/stable.svg"
             LATEST_RAW="https://raw.githubusercontent.com/${{ github.repository_owner }}/acbr-builder/main/badges/latest.svg"
