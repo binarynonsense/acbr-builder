@@ -1,10 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="143" height="28">
+<svg xmlns="http://www.w3.org/2000/svg" width="139" height="28">
   <g shape-rendering="crispEdges">
-    <rect width="68" height="28" fill="#555555"/>
-    <rect x="68" width="75" height="28" fill="#007ec6"/>
+    <rect width="66" height="28" fill="#555555"/>
+    <rect x="66" width="73" height="28" fill="#007ec6"/>
   </g>
   <g fill="#ffffff" text-anchor="middle" font-family="monospace" font-weight="bold" font-size="11">
-    <text x="34" y="18">STABLE</text>
-    <text x="105" y="18">V3.22.0</text>
+    <text x="33" y="18">STABLE</text>
+    <text x="102" y="18">V3.22.0</text>
   </g>
 </svg>
