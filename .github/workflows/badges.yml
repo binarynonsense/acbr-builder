@@ -101,6 +101,7 @@ jobs:
 
       - name: Commit, Push and Purge Cache
         run: |
+          # ref: https://github.com/orgs/community/discussions/26560
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           
