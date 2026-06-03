@@ -24,10 +24,11 @@ jobs:
           COLOR_LATEST_SAME="#007ec6"
           COLOR_LATEST_DIFF="#fe7d37"
           
-          export BADGE_PADDING=18
+          export BADGE_PADDING=24
+          export CHAR_MULTIPLIER_X10=74
 
-          STABLE_VERSION=$(gh release list -R "$MAIN_REPO" --limit 1 --exclude-pre-releases --json tagName --jq '.[0].tagName' 2>/dev/null || echo "")
-          LATEST_VERSION=$(gh release list -R "$MAIN_REPO" --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || echo "")
+          STABLE_VERSION=$(gh release list -R "$MAIN_REPO" --limit 1 --exclude-pre-releases --json tagName --jq '..tagName' 2>/dev/null || echo "")
+          LATEST_VERSION=$(gh release list -R "$MAIN_REPO" --limit 1 --json tagName --jq '..tagName' 2>/dev/null || echo "")
           
           DOWNLOADS_RAW=$(gh api graphql --paginate -f query='
             query($owner: String!, $repo: String!, $endCursor: String) {
@@ -43,17 +44,13 @@ jobs:
               }
             }' -F owner="${{ github.repository_owner }}" -F repo="comic-book-reader" --jq '.data.repository.releases.nodes[].releaseAssets.nodes[].downloadCount' 2>/dev/null | awk '{sum+=$1} END {print (sum ? sum : 0)}')
 
-          
           if [ -z "$STABLE_VERSION" ] || [ "$STABLE_VERSION" = "null" ]; then STABLE_VERSION="UNKNOWN"; fi
           if [ -z "$LATEST_VERSION" ] || [ "$LATEST_VERSION" = "null" ]; then LATEST_VERSION="UNKNOWN"; fi
           if [ -z "$DOWNLOADS_RAW" ] || [ "$DOWNLOADS_RAW" = "null" ]; then DOWNLOADS_RAW="0"; fi
 
-          echo "=== Debug: Raw Downloads String = '$DOWNLOADS_RAW' ==="
           DOWNLOADS_RAW=$(echo "$DOWNLOADS_RAW" | tr -cd '0-9')          
-          # --- DEBUG: Print the sanitized integer string before it hits the Bash math ---
-          echo "=== Debug: Sanitized Downloads Integer = '$DOWNLOADS_RAW' ==="
+          if [ -z "$DOWNLOADS_RAW" ]; then DOWNLOADS_RAW="0"; fi
 
-          
           export STABLE_UPPER=$(echo "$STABLE_VERSION" | tr '[:lower:]' '[:upper:]')
           export LATEST_UPPER=$(echo "$LATEST_VERSION" | tr '[:lower:]' '[:upper:]')
           export DOWNLOADS_COUNT="$DOWNLOADS_RAW"
@@ -64,30 +61,34 @@ jobs:
             export LATEST_COLOR="$COLOR_LATEST_DIFF"
           fi
 
-          STABLE_CHAR_COUNT=${#STABLE_UPPER}
-          STABLE_RAW_TEXT_WIDTH=$(( (STABLE_CHAR_COUNT * 95) / 10 ))          
-          export STABLE_RIGHT_W=$(( STABLE_RAW_TEXT_WIDTH + BADGE_PADDING ))
-          export STABLE_TOTAL_W=$(( 90 + STABLE_RIGHT_W ))
-          export STABLE_TEXT_X=$(( 90 + (STABLE_RIGHT_W / 2) ))
-          export STABLE_TEXT_L=$(( STABLE_RIGHT_W - (BADGE_PADDING - 8) ))
-          
-          LATEST_CHAR_COUNT=${#LATEST_UPPER}
-          LATEST_RAW_TEXT_WIDTH=$(( (LATEST_CHAR_COUNT * 95) / 10 ))          
-          export LATEST_RIGHT_W=$(( LATEST_RAW_TEXT_WIDTH + BADGE_PADDING ))
-          export LATEST_TOTAL_W=$(( 90 + LATEST_RIGHT_W ))
-          export LATEST_TEXT_X=$(( 90 + (LATEST_RIGHT_W / 2) ))
-          export LATEST_TEXT_L=$(( LATEST_RIGHT_W - (BADGE_PADDING - 8) ))
-          
-          DL_CHAR_COUNT=${#DOWNLOADS_COUNT}
-          DL_RAW_TEXT_WIDTH=$(( (DL_CHAR_COUNT * 95) / 10 ))          
-          export DL_RIGHT_W=$(( DL_RAW_TEXT_WIDTH + BADGE_PADDING ))
-          export DL_TOTAL_W=$(( 130 + DL_RIGHT_W ))
-          export DL_TEXT_X=$(( 130 + (DL_RIGHT_W / 2) ))
-          export DL_TEXT_L=$(( DL_RIGHT_W - (BADGE_PADDING - 8) ))
+          generate_badge_math() {
+            local label="$1"
+            local val="$2"
+            local color="$3"
+            local output_filename="$4"
 
-          envsubst < badges/stable.template.svg > badges/stable.svg
-          envsubst < badges/latest.template.svg > badges/latest.svg
-          envsubst < badges/downloads.template.svg > badges/downloads.svg
+            export LABEL_UPPER=$(echo "$label" | tr '[:lower:]' '[:upper:]')
+            export VAL_UPPER=$(echo "$val" | tr '[:lower:]' '[:upper:]')
+            export BADGE_COLOR="$color"
+
+            local left_char_count=${#LABEL_UPPER}
+            local left_text_width=$(( (left_char_count * CHAR_MULTIPLIER_X10) / 10 ))
+            export LEFT_W=$(( left_text_width + BADGE_PADDING ))
+            export LEFT_X=$(( LEFT_W / 2 ))
+
+            local right_char_count=${#VAL_UPPER}
+            local right_text_width=$(( (right_char_count * CHAR_MULTIPLIER_X10) / 10 ))
+            export RIGHT_W=$(( right_text_width + BADGE_PADDING ))
+            export RIGHT_X=$(( LEFT_W + (RIGHT_W / 2) ))
+
+            export TOTAL_W=$(( LEFT_W + RIGHT_W ))
+
+            envsubst < badges/template.svg > "badges/${output_filename}"
+          }
+
+          generate_badge_math "stable" "$STABLE_VERSION" "$STABLE_COLOR" "stable.svg"
+          generate_badge_math "latest" "$LATEST_VERSION" "$LATEST_COLOR" "latest.svg"
+          generate_badge_math "downloads" "$DOWNLOADS_RAW" "$DL_COLOR" "downloads.svg"
 
       - name: Commit, Push and Purge Cache
         run: |
