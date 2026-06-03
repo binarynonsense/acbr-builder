@@ -26,9 +26,23 @@ jobs:
           
           export BADGE_PADDING=18
 
-          STABLE_VERSION=$(gh release list -R "$MAIN_REPO" --limit 1 --exclude-pre-releases --json tagName --jq '..tagName' 2>/dev/null)
-          LATEST_VERSION=$(gh release list -R "$MAIN_REPO" --limit 1 --json tagName --jq '..tagName' 2>/dev/null)
-          DOWNLOADS_RAW=$(gh release list -R "$MAIN_REPO" --all --json assets --jq '[.[].assets[].download_count] | add' 2>/dev/null)
+          STABLE_VERSION=$(gh release list -R "$MAIN_REPO" --limit 1 --exclude-pre-releases --json tagName --jq '.[0].tagName' 2>/dev/null || echo "")
+          LATEST_VERSION=$(gh release list -R "$MAIN_REPO" --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || echo "")
+          
+          DOWNLOADS_RAW=$(gh api graphql --paginate -f query='
+            query($owner: String!, $repo: String!, $endCursor: String) {
+              repository(owner: $owner, name: $repo) {
+                releases(first: 100, after: $endCursor) {
+                  pageInfo { hasNextPage endCursor }
+                  nodes {
+                    releaseAssets(first: 50) {
+                      nodes { downloadCount }
+                    }
+                  }
+                }
+              }
+            }' -F owner="${{ github.repository_owner }}" -F repo="comic-book-reader" --jq '.data.repository.releases.nodes[].releaseAssets.nodes[].downloadCount' 2>/dev/null | awk '{sum+=$1} END {print (sum ? sum : 0)}')
+
           
           if [ -z "$STABLE_VERSION" ] || [ "$STABLE_VERSION" = "null" ]; then STABLE_VERSION="UNKNOWN"; fi
           if [ -z "$LATEST_VERSION" ] || [ "$LATEST_VERSION" = "null" ]; then LATEST_VERSION="UNKNOWN"; fi
