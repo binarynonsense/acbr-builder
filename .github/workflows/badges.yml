@@ -34,8 +34,11 @@ jobs:
           if [ -z "$LATEST_VERSION" ] || [ "$LATEST_VERSION" = "null" ]; then LATEST_VERSION="UNKNOWN"; fi
           if [ -z "$DOWNLOADS_RAW" ] || [ "$DOWNLOADS_RAW" = "null" ]; then DOWNLOADS_RAW="0"; fi
 
-          DOWNLOADS_RAW=$(echo "$DOWNLOADS_RAW" | tr -cd '0-9')
-          if [ -z "$DOWNLOADS_RAW" ]; then DOWNLOADS_RAW="0"; fi
+          echo "=== Debug: Raw Downloads String = '$DOWNLOADS_RAW' ==="
+          DOWNLOADS_RAW=$(echo "$DOWNLOADS_RAW" | tr -cd '0-9')          
+          # --- DEBUG: Print the sanitized integer string before it hits the Bash math ---
+          echo "=== Debug: Sanitized Downloads Integer = '$DOWNLOADS_RAW' ==="
+
           
           export STABLE_UPPER=$(echo "$STABLE_VERSION" | tr '[:lower:]' '[:upper:]')
           export LATEST_UPPER=$(echo "$LATEST_VERSION" | tr '[:lower:]' '[:upper:]')
