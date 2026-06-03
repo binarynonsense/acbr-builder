@@ -37,8 +37,7 @@ jobs:
           
           envsubst < badges/stable.template.svg > badges/stable.svg
 
-      - name: Commit and Push Changes
-        id: git_push
+      - name: Commit, Push and Purge Cache
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -46,19 +45,15 @@ jobs:
           git add badges/stable.svg
           
           if git diff --staged --quiet; then
-            echo "CHANGED=false" >> $GITHUB_OUTPUT
-            echo "Badges are up to date."
+            echo "Badges are already up to date. Skipping commit and purge."
           else
             git commit -m "badge: sync stable release metric"
             git push
-            echo "CHANGED=true" >> $GITHUB_OUTPUT
+            
+            STABLE_RAW="https://raw.githubusercontent.com/${{ github.repository_owner }}/acbr-builder/main/badges/stable.svg"
+            STABLE_RAW_CLEAN=$(echo "$STABLE_RAW" | tr -d ' ')
+            STABLE_HASH=$(echo -n "$STABLE_RAW_CLEAN" | openssl dgst -sha1 -hmac "" | cut -d' ' -f2)
+            
+            echo "Pushed changes successfully. Sending purge request for hash: ${STABLE_HASH}"
+            curl -X PURGE "https://camo.githubusercontent.com/${STABLE_HASH}" || true
           fi
-
-      - name: Purge GitHub Camo Cache
-        if: steps.git_push.outputs.CHANGED == 'true'
-        run: |
-          STABLE_RAW="https://raw.githubusercontent.com/${{ github.repository_owner }}/acbr-builder/main/badges/stable.svg"
-          STABLE_RAW_CLEAN=$(echo "$STABLE_RAW" | tr -d ' ')
-          STABLE_HASH=$(echo -n "$STABLE_RAW_CLEAN" | openssl dgst -sha1 -hmac "" | cut -d' ' -f2)
-          
-          curl -X PURGE "https://camo.githubusercontent.com/${STABLE_HASH}" || true
