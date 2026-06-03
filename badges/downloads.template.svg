@@ -1,0 +1,12 @@
+<svg xmlns="http://w3.org" width="${DL_TOTAL_W}" height="28">
+  <g shape-rendering="crispEdges">
+    <rect width="130" height="28" fill="#555555"/>
+    <rect x="130" width="${DL_RIGHT_W}" height="28" fill="${DL_COLOR}"/>
+  </g>
+  <g fill="#ffffff" text-anchor="middle" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-weight="bold" font-size="11" letter-spacing="1.5">
+    <text x="65" y="17.5" fill="#010101" fill-opacity=".3">DOWNLOADS</text>
+    <text x="65" y="16.5">DOWNLOADS</text>
+    <text x="${DL_TEXT_X}" y="17.5" fill="#010101" fill-opacity=".3" textLength="${DL_TEXT_L}">${DOWNLOADS_COUNT}</text>
+    <text x="${DL_TEXT_X}" y="16.5" textLength="${DL_TEXT_L}">${DOWNLOADS_COUNT}</text>
+  </g>
+</svg>
