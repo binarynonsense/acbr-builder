@@ -4,9 +4,7 @@
     <rect x="90" width="${STABLE_RIGHT_W}" height="28" fill="${STABLE_COLOR}"/>
   </g>
   <g fill="#ffffff" text-anchor="middle" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-weight="bold" font-size="11" letter-spacing="1.5">
-    <text x="45" y="17.5" fill="#010101" fill-opacity=".3">STABLE</text>
-    <text x="45" y="16.5">STABLE</text>
-    <text x="${STABLE_TEXT_X}" y="17.5" fill="#010101" fill-opacity=".3" textLength="${STABLE_TEXT_L}">${STABLE_UPPER}</text>
-    <text x="${STABLE_TEXT_X}" y="16.5" textLength="${STABLE_TEXT_L}">${STABLE_UPPER}</text>
+    <text x="45" y="18">STABLE</text>
+    <text x="${STABLE_TEXT_X}" y="18" textLength="${STABLE_TEXT_L}">${STABLE_UPPER}</text>
   </g>
 </svg>
