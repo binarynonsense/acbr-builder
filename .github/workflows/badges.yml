@@ -54,12 +54,8 @@ jobs:
           # show values like 50.2K, 123.6K ...
           if [ "$DOWNLOADS_RAW" -ge 1000 ]; then
             VAL_DIV=$(( DOWNLOADS_RAW / 100 ))
-            REM=$(( DOWNLOADS_RAW % 100 ))
-            if [ "$REM" -ge 50 ]; then
-              VAL_DIV=$(( VAL_DIV + 1 ))
-            fi
             WHOLE=$(( VAL_DIV / 10 ))
-            DECIMAL=$(( VAL_DIV % 10 ))            
+            DECIMAL=$(( VAL_DIV % 10 ))
             DOWNLOADS_RAW="${WHOLE}.${DECIMAL}K"
           fi
 
