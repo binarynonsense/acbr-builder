@@ -4,9 +4,7 @@
     <rect x="130" width="65" height="28" fill="#28a745"/>
   </g>
   <g fill="#ffffff" text-anchor="middle" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-weight="bold" font-size="11" letter-spacing="1.5">
-    <text x="65" y="17.5" fill="#010101" fill-opacity=".3">DOWNLOADS</text>
-    <text x="65" y="16.5">DOWNLOADS</text>
-    <text x="162" y="17.5" fill="#010101" fill-opacity=".3" textLength="55">50547</text>
-    <text x="162" y="16.5" textLength="55">50547</text>
+    <text x="65" y="18">DOWNLOADS</text>
+    <text x="162" y="18" textLength="55">50547</text>
   </g>
 </svg>
