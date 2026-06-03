@@ -51,6 +51,17 @@ jobs:
           if [ -z "$STABLE_VERSION" ] || [ "$STABLE_VERSION" = "null" ]; then STABLE_VERSION="UNKNOWN"; fi
           if [ -z "$LATEST_VERSION" ] || [ "$LATEST_VERSION" = "null" ]; then LATEST_VERSION="UNKNOWN"; fi
           if [ -z "$DOWNLOADS_RAW" ] || [[ "$DOWNLOADS_RAW" =~ [^0-9] ]]; then DOWNLOADS_RAW="0"; fi
+          # show values like 50.2K, 123.6K ...
+          if [ "$DOWNLOADS_RAW" -ge 1000 ]; then
+            VAL_DIV=$(( DOWNLOADS_RAW / 100 ))
+            REM=$(( DOWNLOADS_RAW % 100 ))
+            if [ "$REM" -ge 50 ]; then
+              VAL_DIV=$(( VAL_DIV + 1 ))
+            fi
+            WHOLE=$(( VAL_DIV / 10 ))
+            DECIMAL=$(( VAL_DIV % 10 ))            
+            DOWNLOADS_RAW="${WHOLE}.${DECIMAL}K"
+          fi
 
           export STABLE_UPPER=$(echo "$STABLE_VERSION" | tr '[:lower:]' '[:upper:]')
           export LATEST_UPPER=$(echo "$LATEST_VERSION" | tr '[:lower:]' '[:upper:]')
