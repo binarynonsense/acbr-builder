@@ -5,26 +5,32 @@ on:
       createWindows:
         description: "Create Windows version"
         required: true
+        type: boolean
         default: true
       createLinux:
         description: "Create Linux version"
         required: true
+        type: boolean
         default: true
       addDateToAlphas:
         description: "Add date to alpha versions"
         required: true
+        type: boolean
         default: true
       addDateToAll:
         description: "Add date to any version"
         required: true
+        type: boolean
         default: false
       releaseWinSelfExtracting:
         description: "Include Windows Self-Extracting"
         required: true
+        type: boolean
         default: true
       releaseLinAppImage:
         description: "Include Linux AppImage"
         required: true
+        type: boolean
         default: true
 permissions:
   contents: write
