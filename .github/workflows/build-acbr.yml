@@ -155,22 +155,20 @@ jobs:
         shell: bash
         run: |
           cd ./dist
-          zip -9 -r ./ACBR_Linux.zip ./ACBR_Linux
-          zip -9 -r ./ACBR_Linux_AppImage.zip ./ACBR_Linux_AppImage
-          zip -9 -r ./ACBR_Linux_deb.zip ./ACBR_Linux_deb
-          zip -9 -r ./ACBR_Linux_flatpak.zip ./ACBR_Linux_flatpak
+          zip -r ./ACBR_Linux.zip ./ACBR_Linux
+          zip -r ./ACBR_Linux_AppImage.zip ./ACBR_Linux_AppImage
+          zip -r ./ACBR_Linux_deb.zip ./ACBR_Linux_deb
+          zip -r ./ACBR_Linux_flatpak.zip ./ACBR_Linux_flatpak
           
       - name: PREPARE ZIPS (WINDOWS)
         if: ${{ matrix.os == 'windows-latest' && github.event.inputs.createWindows == 'true' }}
         shell: bash
         run: |
           cd ./dist
-          7z a -tzip -mm=Deflate -mx=9 ./ACBR_Windows.zip ./ACBR_Windows
-          
+          7z a ./ACBR_Windows.zip ./ACBR_Windows
           RELEASE_SE=${{ github.event.inputs.releaseWinSelfExtracting }}
           if [ "$RELEASE_SE" == "true" ]; then
-            # -ms=on -> solid archiving
-            7z a -t7z -sfx -m0=lzma2 -mx=9 -ms=on ACBR_Windows_SelfExtracting.exe ./ACBR_Windows
+            7z a -t7z -sfx -m0=lzma2 -mx=9 ACBR_Windows_SelfExtracting.exe ./ACBR_Windows
           fi
 
       ############################################################################################################
