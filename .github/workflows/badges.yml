@@ -95,9 +95,15 @@ jobs:
             envsubst < badges/template.svg > "badges/${output_filename}"
           }
 
-          generate_svg_params "stable" "$STABLE_VERSION" "$STABLE_COLOR" "stable.svg"
-          generate_svg_params "latest" "$LATEST_VERSION" "$LATEST_COLOR" "latest.svg"
-          generate_svg_params "downloads" "$DOWNLOADS_RAW" "$DL_COLOR" "downloads.svg"
+          if [[ "$STABLE_VERSION" != "UNKNOWN" ]]; then
+            generate_svg_params "stable" "$STABLE_VERSION" "$STABLE_COLOR" "stable.svg"
+          fi
+          if [[ "$LATEST_VERSION" != "UNKNOWN" ]]; then
+            generate_svg_params "latest" "$LATEST_VERSION" "$LATEST_COLOR" "latest.svg"
+          fi
+          if [[ "$DOWNLOADS_RAW" != "0" ]]; then
+            generate_svg_params "downloads" "$DOWNLOADS_RAW" "$DL_COLOR" "downloads.svg"
+          fi          
 
       - name: Commit, Push and Purge Cache
         run: |
