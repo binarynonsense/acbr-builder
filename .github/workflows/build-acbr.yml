@@ -185,20 +185,22 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          TARGET_REPO="${{ github.repository }}"
           TAG_NAME="v${{ env.RELEASE_NAME }}-linux"
           TITLE_NAME="v${{ env.RELEASE_NAME }} (linux)"
           FILES="./dist/ACBR_Linux.zip ./dist/ACBR_Linux_AppImage.zip ./dist/ACBR_Linux_deb.zip ./dist/ACBR_Linux_flatpak.zip"
-          gh release create "$TAG_NAME" --title "$TITLE_NAME" --draft --prerelease $FILES || gh release upload "$TAG_NAME" $FILES --clobber
+          gh release create "$TAG_NAME" --title "$TITLE_NAME" --draft --prerelease --repo "$TARGET_REPO" $FILES || gh release upload "$TAG_NAME" $FILES --clobber --repo "$TARGET_REPO"
 
       - name: RELEASE (LINUX) (SIMPLE)
         if: ${{matrix.os == 'ubuntu-24.04' && github.event.inputs.createLinux == 'true' && github.event.inputs.releaseLinAppImage == 'false' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          TARGET_REPO="${{ github.repository }}"
           TAG_NAME="v${{ env.RELEASE_NAME }}-linux"
           TITLE_NAME="v${{ env.RELEASE_NAME }} (linux)"
           FILES="./dist/ACBR_Linux.zip"
-          gh release create "$TAG_NAME" --title "$TITLE_NAME" --draft --prerelease $FILES || gh release upload "$TAG_NAME" $FILES --clobber
+          gh release create "$TAG_NAME" --title "$TITLE_NAME" --draft --prerelease --repo "$TARGET_REPO" $FILES || gh release upload "$TAG_NAME" $FILES --clobber --repo "$TARGET_REPO"
 
       - name: RELEASE (WINDOWS) (ALL)
         if: ${{matrix.os == 'windows-latest' && github.event.inputs.createWindows == 'true' && github.event.inputs.releaseWinSelfExtracting == 'true' }}
@@ -206,10 +208,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          TARGET_REPO="${{ github.repository }}"
           TAG_NAME="v${{ env.RELEASE_NAME }}-windows"
           TITLE_NAME="v${{ env.RELEASE_NAME }} (windows)"
           FILES="./dist/ACBR_Windows.zip ./dist/ACBR_Windows_SelfExtracting.exe"
-          gh release create "$TAG_NAME" --title "$TITLE_NAME" --draft --prerelease $FILES || gh release upload "$TAG_NAME" $FILES --clobber
+          gh release create "$TAG_NAME" --title "$TITLE_NAME" --draft --prerelease --repo "$TARGET_REPO" $FILES || gh release upload "$TAG_NAME" $FILES --clobber --repo "$TARGET_REPO"
 
       - name: RELEASE (WINDOWS) (SIMPLE)
         if: ${{matrix.os == 'windows-latest' && github.event.inputs.createWindows == 'true' && github.event.inputs.releaseWinSelfExtracting == 'false' }}
@@ -217,8 +220,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          TARGET_REPO="${{ github.repository }}"
           TAG_NAME="v${{ env.RELEASE_NAME }}-windows"
           TITLE_NAME="v${{ env.RELEASE_NAME }} (windows)"
           FILES="./dist/ACBR_Windows.zip"
-          gh release create "$TAG_NAME" --title "$TITLE_NAME" --draft --prerelease $FILES || gh release upload "$TAG_NAME" $FILES --clobber
+          gh release create "$TAG_NAME" --title "$TITLE_NAME" --draft --prerelease --repo "$TARGET_REPO" $FILES || gh release upload "$TAG_NAME" $FILES --clobber --repo "$TARGET_REPO"
+
 
