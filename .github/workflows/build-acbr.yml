@@ -202,6 +202,7 @@ jobs:
 
       - name: RELEASE (WINDOWS) (ALL)
         if: ${{matrix.os == 'windows-latest' && github.event.inputs.createWindows == 'true' && github.event.inputs.releaseWinSelfExtracting == 'true' }}
+        shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -212,6 +213,7 @@ jobs:
 
       - name: RELEASE (WINDOWS) (SIMPLE)
         if: ${{matrix.os == 'windows-latest' && github.event.inputs.createWindows == 'true' && github.event.inputs.releaseWinSelfExtracting == 'false' }}
+        shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
