@@ -1,10 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="146" height="28" data-raw="51395" data-date="2026-06-22 03:47:25">
+<svg xmlns="http://www.w3.org/2000/svg" width="146" height="28" data-raw="51480" data-date="2026-06-25 02:50:26">
   <g shape-rendering="crispEdges">
     <rect width="87" height="28" fill="#555555"/>
     <rect x="87" width="59" height="28" fill="#28a745"/>
   </g>
   <g fill="#ffffff" text-anchor="middle" font-family="monospace" font-weight="bold" font-size="11">
     <text x="43" y="18">DOWNLOADS</text>
-    <text x="116" y="18">51.3K</text>
+    <text x="116" y="18">51.4K</text>
   </g>
 </svg>
